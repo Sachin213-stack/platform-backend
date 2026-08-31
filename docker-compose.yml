@@ -1,0 +1,86 @@
+# ============================================
+# AI-CTO Backend — Docker Compose (Development)
+# ============================================
+# Usage: docker-compose up -d
+# This spins up PostgreSQL, Redis, and the API server.
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:16-alpine
+    container_name: aicto-postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: aicto_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d aicto_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # Redis (Streams, Cache, Session, Locks, Circuit-Breaker, JWT Blacklist)
+  redis:
+    image: redis:7-alpine
+    container_name: aicto-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  # AI-CTO FastAPI Backend
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: aicto-api
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://postgres:postgres@postgres:5432/aicto_db
+      - DATABASE_SYNC_URL=postgresql://postgres:postgres@postgres:5432/aicto_db
+      - REDIS_URL=redis://redis:6379/0
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    volumes:
+      - .:/app  # Hot-reload in development
+
+  # Telemetry Ingestion Worker (Background)
+  worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: aicto-worker
+    env_file:
+      - .env
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://postgres:postgres@postgres:5432/aicto_db
+      - DATABASE_SYNC_URL=postgresql://postgres:postgres@postgres:5432/aicto_db
+      - REDIS_URL=redis://redis:6379/0
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    command: python -m app.workers.ingestion_worker
+    volumes:
+      - .:/app
+
+volumes:
+  postgres_data:
+  redis_data:
