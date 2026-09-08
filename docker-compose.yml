@@ -1,13 +1,16 @@
 # ============================================
 # AI-CTO Backend — Docker Compose (Development)
 # ============================================
-# Usage: docker-compose up -d
-# This spins up PostgreSQL, Redis, and the API server.
+# Usage: docker compose up -d
+# This starts:
+#   1. PostgreSQL + TimescaleDB (timescale/timescaledb:latest-pg16)
+#   2. Redis 7 (redis:7-alpine)
+#   3. AI-CTO FastAPI Backend (backend service with hot-reload)
 
 services:
-  # PostgreSQL Database
+  # PostgreSQL with TimescaleDB Extension
   postgres:
-    image: postgres:16-alpine
+    image: timescale/timescaledb:latest-pg16
     container_name: aicto-postgres
     environment:
       POSTGRES_USER: postgres
@@ -38,19 +41,22 @@ services:
       retries: 5
 
   # AI-CTO FastAPI Backend
-  api:
+  backend:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: aicto-api
+    container_name: aicto-backend
     ports:
       - "8000:8000"
     env_file:
-      - .env
+      - path: .env
+        required: false
     environment:
       - DATABASE_URL=postgresql+asyncpg://postgres:postgres@postgres:5432/aicto_db
       - DATABASE_SYNC_URL=postgresql://postgres:postgres@postgres:5432/aicto_db
       - REDIS_URL=redis://redis:6379/0
+      - ENVIRONMENT=development
+      - DEBUG=True
     depends_on:
       postgres:
         condition: service_healthy
@@ -59,27 +65,6 @@ services:
     command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
     volumes:
       - .:/app  # Hot-reload in development
-
-  # Telemetry Ingestion Worker (Background)
-  worker:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    container_name: aicto-worker
-    env_file:
-      - .env
-    environment:
-      - DATABASE_URL=postgresql+asyncpg://postgres:postgres@postgres:5432/aicto_db
-      - DATABASE_SYNC_URL=postgresql://postgres:postgres@postgres:5432/aicto_db
-      - REDIS_URL=redis://redis:6379/0
-    depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-    command: python -m app.workers.ingestion_worker
-    volumes:
-      - .:/app
 
 volumes:
   postgres_data:

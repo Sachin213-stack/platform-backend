@@ -1,7 +1,8 @@
 import asyncio
 import signal
 import sys
-from app.core.logging import setup_logging, logger
+import uuid
+from app.core.logging import setup_logging, logger, correlation_id_ctx, business_id_ctx
 from app.core.config import settings
 from app.services.redis_service import redis_service
 from app.services.ingestion_service import ingestion_service
@@ -46,6 +47,9 @@ class IngestionWorker:
         )
 
         while self.is_running:
+            cycle_id = f"ingest-{uuid.uuid4().hex[:8]}"
+            correlation_id_ctx.set(cycle_id)
+            business_id_ctx.set("")
             try:
                 processed_count = await ingestion_service.process_batch(batch_size=100, block_ms=2000)
                 if processed_count == 0:
@@ -56,6 +60,7 @@ class IngestionWorker:
                 await asyncio.sleep(2.0)
 
         # Cleanup on exit
+        logger.info("Cleaning up resources on ingestion worker exit...")
         await redis_service.disconnect()
         await engine.dispose()
         logger.info("Ingestion worker shutdown complete.")

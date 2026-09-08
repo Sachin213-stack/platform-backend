@@ -54,21 +54,33 @@ class Settings(BaseSettings):
     # python -c 'from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())'
     FERNET_SECRET_KEY: str = "aASb7vcf4bLs3HfHDw3xJnen9pKnUf0Nnbwx6ElLAxQ="
 
-    # NVIDIA NIM LLM Endpoints (Priority Fallback Chain)
-    NIM_ENDPOINT_1: str = "https://integrate.api.nvidia.com/v1"
-    NIM_API_KEY_1: str = ""
-    NIM_MODEL_1: str = "meta/llama-3.1-70b-instruct"
+    # Kimi (Moonshot AI) LLM Configuration (Sole LLM Provider)
+    KIMI_API_KEY: str = ""
+    MOONSHOT_API_KEY: str = ""
+    KIMI_BASE_URL: str = "https://api.moonshot.ai/v1"
+    KIMI_MODEL_PRIMARY: str = "kimi-k3"
+    KIMI_MODEL_SECONDARY: str = "kimi-k2.6"
+    KIMI_MODEL_FALLBACK: str = "moonshot-v1-128k"
+    KIMI_TIMEOUT_SECONDS: float = 30.0
 
-    NIM_ENDPOINT_2: str = "https://integrate.api.nvidia.com/v1"
-    NIM_API_KEY_2: str = ""
-    NIM_MODEL_2: str = "mistralai/mixtral-8x22b-instruct-v0.1"
+    @property
+    def effective_kimi_api_key(self) -> str:
+        """Returns the configured Kimi API key from KIMI_API_KEY, MOONSHOT_API_KEY, or env."""
+        key = (
+            self.KIMI_API_KEY
+            or self.MOONSHOT_API_KEY
+            or os.getenv("KIMI_API_KEY", "")
+            or os.getenv("MOONSHOT_API_KEY", "")
+        )
+        return (key or "").strip('"\'').strip()
 
-    NIM_ENDPOINT_3: str = "https://integrate.api.nvidia.com/v1"
-    NIM_API_KEY_3: str = ""
-    NIM_MODEL_3: str = "meta/llama-3.1-8b-instruct"
-
-    # Observability
+    # Observability & Logging
     SENTRY_DSN: str = ""
+    LOG_LEVEL: str = "DEBUG" if os.getenv("ENVIRONMENT") == "development" else "INFO"
+    LOG_FORMAT: str = "auto"  # 'auto' (console for dev, json for prod), 'json', or 'console'
+    LOG_FILE_PATH: str = "logs/aicto.log"
+    LOG_MAX_BYTES: int = 10 * 1024 * 1024  # 10 MB per file
+    LOG_BACKUP_COUNT: int = 5  # Keep 5 rotated backup files
 
 
 settings = Settings()

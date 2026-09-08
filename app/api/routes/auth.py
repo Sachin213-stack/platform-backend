@@ -13,7 +13,7 @@ from app.core.security import (
     create_refresh_token,
     decode_token,
 )
-from app.db.session import get_db
+from app.db.session import get_db, is_db_available
 from app.db.models.business import Business, User
 from app.api.schemas.auth import (
     UserRegister,
@@ -29,24 +29,29 @@ router = APIRouter(prefix="/auth", tags=["Authentication"])
 
 @router.post("/register", response_model=Token, status_code=status.HTTP_201_CREATED)
 async def register(data: UserRegister, db: AsyncSession = Depends(get_db)):
-    # Check if user email already exists
-    try:
-        existing_user = await db.execute(select(User).where(User.email == data.email))
-        if existing_user.scalars().first():
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="A user with this email address already exists",
-            )
-    except HTTPException:
-        raise
-    except Exception as e:
-        if settings.ENVIRONMENT != "development":
-            raise HTTPException(
-                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-                detail="Database is currently unavailable",
-            )
-        # Dev-only fallback when DB is offline
-        logger.warning("DB offline during registration check: %s", e)
+    from app.db.session import is_db_available
+    db_online = await is_db_available()
+
+    if db_online:
+        # Check if user email already exists
+        try:
+            existing_user = await db.execute(select(User).where(User.email == data.email))
+            if existing_user.scalars().first():
+                logger.warning("Registration rejected: Email %s already exists", data.email)
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="A user with this email address already exists",
+                )
+        except HTTPException:
+            raise
+        except Exception as e:
+            if settings.ENVIRONMENT != "development":
+                logger.error("Database unavailable during registration check for %s: %s", data.email, e, exc_info=True)
+                raise HTTPException(
+                    status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                    detail="Database is currently unavailable",
+                )
+            logger.info("DB offline during registration check: %s", e)
 
     # Generate unique slug for business
     base_slug = data.business_name.lower().replace(" ", "-")
@@ -56,43 +61,51 @@ async def register(data: UserRegister, db: AsyncSession = Depends(get_db)):
     biz_id = str(uuid.uuid4())
     role = "owner"
 
-    try:
-        # Create Business
-        new_business = Business(
-            name=data.business_name,
-            slug=slug,
-            plan_tier="starter",
-            retention_days=30,
-        )
-        db.add(new_business)
-        await db.flush()  # Populates new_business.id
-
-        # Create Owner User
-        new_user = User(
-            business_id=new_business.id,
-            email=data.email,
-            hashed_password=get_password_hash(data.password),
-            full_name=data.full_name or data.business_name,
-            role="owner",
-            is_active=True,
-        )
-        db.add(new_user)
-        await db.commit()
-        await db.refresh(new_user)
-
-        user_id = str(new_user.id)
-        biz_id = str(new_business.id)
-        role = new_user.role
-    except HTTPException:
-        raise
-    except Exception as e:
-        await db.rollback()
-        if settings.ENVIRONMENT != "development":
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="Failed to create user account",
+    if db_online:
+        try:
+            # Create Business
+            new_business = Business(
+                name=data.business_name,
+                slug=slug,
+                plan_tier="starter",
+                retention_days=30,
             )
-        logger.warning("DB error during registration (dev fallback active): %s", e)
+            db.add(new_business)
+            await db.flush()  # Populates new_business.id
+
+            # Create Owner User
+            new_user = User(
+                business_id=new_business.id,
+                email=data.email,
+                hashed_password=get_password_hash(data.password),
+                full_name=data.full_name or data.business_name,
+                role="owner",
+                is_active=True,
+            )
+            db.add(new_user)
+            await db.commit()
+            await db.refresh(new_user)
+
+            user_id = str(new_user.id)
+            biz_id = str(new_business.id)
+            role = new_user.role
+            logger.info("User registered successfully: email=%s, user_id=%s, business_id=%s", data.email, user_id, biz_id)
+        except HTTPException:
+            raise
+        except Exception as e:
+            try:
+                await db.rollback()
+            except Exception:
+                pass
+            if settings.ENVIRONMENT != "development":
+                logger.error("Failed to create user account for %s: %s", data.email, e, exc_info=True)
+                raise HTTPException(
+                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    detail="Failed to create user account",
+                )
+            logger.info("Registration processed in dev fallback mode (DB offline): %s", e)
+    else:
+        logger.info("New user registration processed in dev fallback mode: email=%s, user_id=%s, business_id=%s", data.email, user_id, biz_id)
 
     # Issue JWT tokens
     jti = uuid.uuid4().hex
@@ -120,21 +133,28 @@ async def register(data: UserRegister, db: AsyncSession = Depends(get_db)):
 
 @router.post("/login", response_model=Token)
 async def login(data: UserLogin, db: AsyncSession = Depends(get_db)):
+    from app.db.session import is_db_available
+    db_online = await is_db_available()
+
     user = None
-    try:
-        result = await db.execute(select(User).where(User.email == data.email))
-        user = result.scalars().first()
-    except Exception:
-        user = None
+    if db_online:
+        try:
+            result = await db.execute(select(User).where(User.email == data.email))
+            user = result.scalars().first()
+        except Exception as e:
+            logger.debug("Database query failed during login for %s: %s", data.email, e)
+            user = None
 
     if user:
         if not verify_password(data.password, user.hashed_password):
+            logger.warning("Failed login attempt for email %s: Incorrect password", data.email)
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Incorrect email or password",
             )
 
         if not user.is_active:
+            logger.warning("Failed login attempt for email %s: Account is deactivated (user_id=%s)", data.email, user.id)
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Account is deactivated",
@@ -149,7 +169,9 @@ async def login(data: UserLogin, db: AsyncSession = Depends(get_db)):
         biz_id = str(uuid.uuid4())
         role = "owner"
         user_name = data.email.split("@")[0].capitalize()
+        logger.info("Dev fallback login granted for email %s", data.email)
     else:
+        logger.warning("Failed login attempt for email %s: User not found", data.email)
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect email or password",
@@ -170,6 +192,7 @@ async def login(data: UserLogin, db: AsyncSession = Depends(get_db)):
         "role": role,
     })
 
+    logger.info("User logged in successfully: email=%s, user_id=%s, business_id=%s", data.email, user_id, biz_id)
     return Token(
         access_token=access_token,
         refresh_token=refresh_token,
@@ -199,6 +222,7 @@ async def demo_login():
         "role": "owner",
     })
 
+    logger.info("Demo token generated for demo user %s (tenant %s)", demo_user_id, demo_biz_id)
     return Token(
         access_token=access_token,
         refresh_token=refresh_token,
@@ -217,13 +241,13 @@ async def logout(
         token = authorization.replace("Bearer ", "")
         payload = decode_token(token)
         if payload and "jti" in payload:
-            # Use actual token expiry for Redis blacklist TTL instead of fixed duration
             import time
             exp = payload.get("exp", 0)
             remaining_ttl = max(int(exp - time.time()), 60) if exp else settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60
             await redis_service.revoke_token(payload["jti"], ttl_seconds=remaining_ttl)
+            logger.info("Revoked access token jti=%s for user %s (business_id=%s)", payload["jti"], current_user.id, current_user.business_id)
     except Exception as e:
-        logger.warning("Error during token revocation: %s", e)
+        logger.warning("Error during token revocation for user %s: %s", current_user.id, e, exc_info=True)
     return {"message": "Successfully logged out and revoked access token"}
 
 
@@ -234,13 +258,14 @@ async def get_me(
 ):
     # Fetch business name safely
     business_name = "Apex Retail Global"
-    try:
-        result = await db.execute(select(Business).where(Business.id == current_user.business_id))
-        business = result.scalars().first()
-        if business:
-            business_name = business.name
-    except Exception:
-        pass
+    if await is_db_available():
+        try:
+            result = await db.execute(select(Business).where(Business.id == current_user.business_id))
+            business = result.scalars().first()
+            if business:
+                business_name = business.name
+        except Exception as e:
+            logger.debug("Could not fetch business name for user %s (business_id=%s): %s", current_user.id, current_user.business_id, e)
 
     return UserResponse(
         id=current_user.id,

@@ -9,7 +9,7 @@ The **AI-CTO Backend** is an asynchronous, multi-tenant backend service designed
 ## 🌟 Architecture & Key Features
 
 - ⚡ **FastAPI Modular Monolith**: High-throughput async API endpoints handling Auth, Ingestion, Dashboard Vitals, and FRIDAY AI Hotpath.
-- 🤖 **FRIDAY LLM Adapter**: Multi-NIM priority fallback chain (`meta/llama-3.2-11b-vision-instruct`, `mistralai/mixtral-8x22b-instruct-v0.1`) with half-open circuit breaker, PII scrubbing (emails, cards, secrets), and live telemetry context injection.
+- 🤖 **FRIDAY LLM Adapter**: Moonshot AI (Kimi) priority fallback chain (`kimi-k3`, `kimi-k2.6`, `moonshot-v1-128k`) with half-open circuit breaker, native OpenAI-compatible tool use / function calling, Server-Sent Events (SSE) streaming, PII scrubbing, and live telemetry context injection.
 - 🔒 **Multi-Tenant Postgres with RLS**: Tenant data isolation at the database layer using PostgreSQL Row-Level Security (`app.current_business_id`).
 - ⚡ **Redis Multi-Purpose Engine**:
   1. Ingestion Buffer (Redis Streams)
@@ -27,7 +27,9 @@ The **AI-CTO Backend** is an asynchronous, multi-tenant backend service designed
 
 | Method | Endpoint | Description |
 | :--- | :--- | :--- |
-| `POST` | `/api/friday/chat` | FRIDAY AI Conversational Hotpath (NIM LLM + Telemetry Context) |
+| `POST` | `/api/friday/chat` | FRIDAY AI Conversational Hotpath (Kimi LLM + Telemetry Context) |
+| `POST` | `/api/friday/chat/stream` | Real-time SSE streaming conversational token generation |
+| `POST` | `/api/friday/actions/execute` | Confirmed autonomous mitigation action execution & audit logging |
 | `POST` | `/api/ingestion/telemetry` | High-volume telemetry event ingestion buffer |
 | `GET` | `/api/dashboard/vitals` | Real-time system vitals, latency, and active anomalies |
 | `POST` | `/api/auth/login` | User authentication & JWT access token issuance |
@@ -66,12 +68,14 @@ Copy `.env.example` to `.env`:
 cp .env.example .env
 ```
 
-Set your NVIDIA NIM API key and Fernet encryption key in `.env`:
+Set your Kimi (Moonshot AI) API key and Fernet encryption key in `.env`:
 ```env
-# NVIDIA NIM LLM Endpoint Configuration
-NIM_ENDPOINT_1=https://integrate.api.nvidia.com/v1
-NIM_API_KEY_1="nvapi-your-nvidia-api-key-here"
-NIM_MODEL_1=meta/llama-3.2-11b-vision-instruct
+# Kimi (Moonshot AI) LLM Configuration (Sole LLM Provider)
+KIMI_API_KEY="sk-your-kimi-moonshot-api-key-here"
+KIMI_BASE_URL="https://api.moonshot.ai/v1"
+KIMI_MODEL_PRIMARY="kimi-k3"
+KIMI_MODEL_SECONDARY="kimi-k2.6"
+KIMI_MODEL_FALLBACK="moonshot-v1-128k"
 
 # Security
 JWT_SECRET_KEY=aicto-super-secret-key-change-in-production-min32chars

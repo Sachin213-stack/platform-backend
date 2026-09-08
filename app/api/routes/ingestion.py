@@ -35,7 +35,7 @@ async def ingest_telemetry_event(
     if event.idempotency_key:
         is_new = await redis_service.check_idempotency_key(event.idempotency_key)
         if not is_new:
-            logger.info(f"Duplicate event skipped (idempotency key: {event.idempotency_key})")
+            logger.debug("Duplicate event skipped (idempotency key: %s)", event.idempotency_key)
             return IngestionResponse(
                 status="skipped",
                 message="Duplicate event ignored",
@@ -64,6 +64,12 @@ async def ingest_telemetry_event(
     entry_id = await redis_service.add_to_stream(
         stream_key=settings.REDIS_STREAM_KEY,
         data=event_payload,
+    )
+    logger.debug(
+        "Telemetry event queued to stream %s (id: %s, tenant: %s)",
+        settings.REDIS_STREAM_KEY,
+        event_payload["id"],
+        business_id,
     )
 
     return IngestionResponse(

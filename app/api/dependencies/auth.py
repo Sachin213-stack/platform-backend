@@ -1,6 +1,6 @@
 import uuid
 from typing import Optional
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, HTTPException, status, Request
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
@@ -16,6 +16,7 @@ security_bearer = HTTPBearer(auto_error=False)
 
 
 async def get_current_user_and_business(
+    request: Request,
     credentials: Optional[HTTPAuthorizationCredentials] = Depends(security_bearer),
     db: AsyncSession = Depends(get_db),
 ) -> User:
@@ -25,7 +26,7 @@ async def get_current_user_and_business(
     """
     if not credentials:
         if settings.ENVIRONMENT == "development":
-            return User(
+            dev_user = User(
                 id=uuid.UUID("00000000-0000-0000-0000-000000000001"),
                 business_id=uuid.UUID("11111111-1111-1111-1111-111111111111"),
                 email="dev.admin@aicto.io",
@@ -34,6 +35,9 @@ async def get_current_user_and_business(
                 role="owner",
                 is_active=True,
             )
+            business_id_ctx.set(str(dev_user.business_id))
+            return dev_user
+        logger.warning("Auth failure on %s: Missing authorization credentials", request.url.path)
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Authentication credentials were not provided",
@@ -43,6 +47,7 @@ async def get_current_user_and_business(
     token = credentials.credentials
     payload = decode_token(token)
     if not payload:
+        logger.warning("Auth failure on %s: Invalid or expired JWT token", request.url.path)
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid or expired authentication token",
@@ -52,6 +57,7 @@ async def get_current_user_and_business(
     # Check if token is in Redis revocation blacklist
     jti = payload.get("jti")
     if jti and await redis_service.is_token_revoked(jti):
+        logger.warning("Auth failure on %s: Token has been revoked (jti=%s)", request.url.path, jti)
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Token has been revoked",
@@ -62,6 +68,12 @@ async def get_current_user_and_business(
     business_id_str = payload.get("business_id")
 
     if not user_id_str or not business_id_str:
+        logger.warning(
+            "Auth failure on %s: Token payload missing required claims (has_sub=%s, has_business_id=%s)",
+            request.url.path,
+            bool(user_id_str),
+            bool(business_id_str),
+        )
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Token payload is missing required claims",
@@ -72,28 +84,40 @@ async def get_current_user_and_business(
         user_id = uuid.UUID(user_id_str)
         business_id = uuid.UUID(business_id_str)
     except ValueError:
+        logger.warning(
+            "Auth failure on %s: Malformed UUID identifier in token claims (user_id=%s, business_id=%s)",
+            request.url.path,
+            user_id_str,
+            business_id_str,
+        )
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid identifier format in token",
         )
 
-    # Set logging contextvar
+    # Set logging contextvar immediately upon successful token validation
     business_id_ctx.set(str(business_id))
 
     # Set PostgreSQL Row-Level Security (RLS) context variable (if DB available)
-    try:
-        await set_rls_context(db, str(business_id))
-    except Exception as e:
-        logger.debug(f"Could not set RLS context (DB may be offline): {e}")
+    from app.db.session import is_db_available
+    db_online = await is_db_available()
+
+    if db_online:
+        try:
+            await set_rls_context(db, str(business_id))
+        except Exception as e:
+            logger.debug("PostgreSQL RLS context error for business %s on %s: %s", business_id, request.url.path, e)
 
     # Fetch User from DB (or use fallback in development mode)
-    try:
-        stmt = select(User).where(User.id == user_id, User.business_id == business_id)
-        result = await db.execute(stmt)
-        user = result.scalars().first()
-    except Exception as e:
-        logger.warning(f"Database query failed in auth dependency: {e}")
-        user = None
+    user = None
+    if db_online:
+        try:
+            stmt = select(User).where(User.id == user_id, User.business_id == business_id)
+            result = await db.execute(stmt)
+            user = result.scalars().first()
+        except Exception as e:
+            logger.debug("Database query failed in auth dependency for user %s: %s", user_id, e)
+            user = None
 
     if not user:
         if settings.ENVIRONMENT == "development":
@@ -107,12 +131,14 @@ async def get_current_user_and_business(
                 role=payload.get("role", "owner"),
                 is_active=True,
             )
+        logger.warning("Auth failure on %s: User %s not found or does not belong to business %s", request.url.path, user_id, business_id)
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="User not found or does not belong to the token business",
         )
 
     if not user.is_active:
+        logger.warning("Auth failure on %s: User account %s is deactivated (business=%s)", request.url.path, user.id, business_id)
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="User account is deactivated",

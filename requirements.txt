@@ -23,7 +23,7 @@ passlib[bcrypt]==1.7.4
 bcrypt==5.0.0
 cryptography==50.0.1
 
-# HTTP Client (NVIDIA NIM & Integrations)
+# HTTP Client (Kimi Moonshot AI & Integrations)
 httpx==0.28.1
 
 # Background Scheduling & ML Engine

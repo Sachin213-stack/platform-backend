@@ -1,0 +1,61 @@
+# ============================================
+# AI-CTO Backend — Docker Ignore File
+# ============================================
+
+# Version control
+.git
+.gitignore
+.gitattributes
+
+# Environment files and secrets (NEVER bake into image)
+.env
+.env*
+*.env
+
+# Python bytecode & cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.pytest_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+
+# Node & Frontend artifacts
+node_modules/
+dist/
+build/
+
+# IDE and Editor configurations
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Tests and diagnostic smoke scripts
+tests/
+test_*.py
+
+# Documentation & Markdown not needed at runtime
+*.md
+docs/
+
+# Logs (keep directory structure clean)
+logs/*
+!logs/.gitkeep
+
+# Docker files
+Dockerfile*
+docker-compose*.yml
+.dockerignore
+
+# OS specific files
+.DS_Store
+Thumbs.db

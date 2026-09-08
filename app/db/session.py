@@ -1,4 +1,6 @@
-from typing import AsyncGenerator
+import asyncio
+import time
+from typing import AsyncGenerator, Optional
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
 from sqlalchemy import text
 from app.core.config import settings
@@ -22,12 +24,43 @@ AsyncSessionLocal = async_sessionmaker(
     autoflush=False,
 )
 
+_db_available: Optional[bool] = None
+_db_last_checked: float = 0.0
+
+
+async def _probe_db() -> bool:
+    async with engine.connect() as conn:
+        await conn.execute(text("SELECT 1"))
+    return True
+
+
+async def is_db_available(force_check: bool = False) -> bool:
+    """
+    Checks if the primary PostgreSQL database is reachable.
+    Caches availability status (20s TTL) to avoid repeating connection timeouts.
+    Uses 1.0s probe timeout to fail fast when offline.
+    """
+    global _db_available, _db_last_checked
+    now = time.time()
+    cache_ttl = 15.0 if _db_available else 20.0
+    if not force_check and _db_available is not None and (now - _db_last_checked < cache_ttl):
+        return _db_available
+
+    try:
+        await asyncio.wait_for(_probe_db(), timeout=1.0)
+        _db_available = True
+    except Exception:
+        _db_available = False
+
+    _db_last_checked = now
+    return _db_available
+
 
 async def get_db() -> AsyncGenerator[AsyncSession, None]:
     """
     Base DB session generator.
     Routes are responsible for calling session.commit() explicitly.
-    This dependency only handles rollback on exception and session cleanup.
+    This dependency handles rollback on exception and session cleanup.
     """
     session = AsyncSessionLocal()
     try:
@@ -37,15 +70,12 @@ async def get_db() -> AsyncGenerator[AsyncSession, None]:
             await session.rollback()
         except Exception:
             pass
-        if settings.ENVIRONMENT != "development":
-            raise
-        logger.warning("DB session error (suppressed in dev): %s", e)
+        raise
     finally:
         try:
             await session.close()
         except Exception:
             pass
-
 
 
 async def set_rls_context(session: AsyncSession, business_id: str) -> None:
@@ -54,7 +84,10 @@ async def set_rls_context(session: AsyncSession, business_id: str) -> None:
     PostgreSQL policies check: current_setting('app.current_business_id', true) = business_id
     """
     if business_id:
-        await session.execute(
-            text("SELECT set_config('app.current_business_id', :business_id, true)"),
-            {"business_id": str(business_id)},
-        )
+        try:
+            await session.execute(
+                text("SELECT set_config('app.current_business_id', :business_id, true)"),
+                {"business_id": str(business_id)},
+            )
+        except Exception as e:
+            logger.debug("Could not set RLS context (DB offline): %s", e)

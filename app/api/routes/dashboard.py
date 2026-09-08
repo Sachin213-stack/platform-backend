@@ -6,7 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, desc
 
 from app.api.dependencies.auth import get_current_user_and_business
-from app.db.session import get_db
+from app.db.session import get_db, is_db_available
 from app.db.models.business import User
 from app.db.models.telemetry import TelemetryEvent
 from app.db.models.ml import Anomaly
@@ -16,6 +16,7 @@ from app.api.schemas.dashboard import (
     CapacityMetrics,
     AnomalyItem,
 )
+from app.core.logging import logger
 from app.services.redis_service import redis_service
 
 router = APIRouter(prefix="/dashboard", tags=["Dashboard & Monitoring"])
@@ -48,46 +49,49 @@ async def get_dashboard_metrics(
     total_orders = 320
     anomaly_items: List[AnomalyItem] = []
 
-    try:
-        # Average response time & error rate
-        perf_stmt = select(
-            func.avg(TelemetryEvent.response_time_ms).label("avg_latency"),
-            func.count(TelemetryEvent.id).label("total_events"),
-            func.sum(TelemetryEvent.orders_count).label("total_orders"),
-        ).where(
-            TelemetryEvent.business_id == current_user.business_id,
-            TelemetryEvent.timestamp >= one_hour_ago,
-        )
-        perf_res = (await db.execute(perf_stmt)).first()
-
-        if perf_res and perf_res.avg_latency is not None:
-            avg_latency = float(perf_res.avg_latency)
-        if perf_res and perf_res.total_orders is not None:
-            total_orders = int(perf_res.total_orders)
-
-        # Recent anomalies
-        anom_stmt = (
-            select(Anomaly)
-            .where(Anomaly.business_id == current_user.business_id)
-            .order_by(desc(Anomaly.detected_at))
-            .limit(5)
-        )
-        anom_res = (await db.execute(anom_stmt)).scalars().all()
-        for a in anom_res:
-            anomaly_items.append(
-                AnomalyItem(
-                    id=str(a.id),
-                    metric_name=a.metric_name,
-                    severity=a.severity,
-                    expected_value=a.expected_value,
-                    actual_value=a.actual_value,
-                    description=a.description,
-                    detected_at=a.detected_at,
-                )
+    if await is_db_available():
+        try:
+            # Average response time & error rate
+            perf_stmt = select(
+                func.avg(TelemetryEvent.response_time_ms).label("avg_latency"),
+                func.count(TelemetryEvent.id).label("total_events"),
+                func.sum(TelemetryEvent.orders_count).label("total_orders"),
+            ).where(
+                TelemetryEvent.business_id == current_user.business_id,
+                TelemetryEvent.timestamp >= one_hour_ago,
             )
-    except Exception as e:
-        # Graceful fallback in dev mode or disconnected DB
-        pass
+            perf_res = (await db.execute(perf_stmt)).first()
+
+            if perf_res and perf_res.avg_latency is not None:
+                avg_latency = float(perf_res.avg_latency)
+            if perf_res and perf_res.total_orders is not None:
+                total_orders = int(perf_res.total_orders)
+
+            # Recent anomalies
+            anom_stmt = (
+                select(Anomaly)
+                .where(Anomaly.business_id == current_user.business_id)
+                .order_by(desc(Anomaly.detected_at))
+                .limit(5)
+            )
+            anom_res = (await db.execute(anom_stmt)).scalars().all()
+            for a in anom_res:
+                anomaly_items.append(
+                    AnomalyItem(
+                        id=str(a.id),
+                        metric_name=a.metric_name,
+                        severity=a.severity,
+                        expected_value=a.expected_value,
+                        actual_value=a.actual_value,
+                        description=a.description,
+                        detected_at=a.detected_at,
+                    )
+                )
+        except Exception as e:
+            # Graceful fallback in dev mode or disconnected DB
+            logger.warning("Failed to fetch live telemetry metrics for dashboard: %s (using fallback)", e)
+    else:
+        logger.debug("Database offline: returning simulated telemetry metrics for dashboard")
 
     # Fallback default items if fresh business
     if not anomaly_items:
