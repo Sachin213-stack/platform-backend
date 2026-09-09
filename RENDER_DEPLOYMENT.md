@@ -35,22 +35,24 @@ Configure the following environment variables in the Render Dashboard (**Environ
 |---|---|---|
 | `DATABASE_URL` | **Yes** | Connection string for PostgreSQL with asyncpg driver.<br>Format: `postgresql+asyncpg://<user>:<password>@<host>:<port>/<dbname>`<br>*(Replace `postgres://` from Render managed DB with `postgresql+asyncpg://`)* |
 | `DATABASE_SYNC_URL` | **Yes** | Connection string for Alembic sync migrations.<br>Format: `postgresql://<user>:<password>@<host>:<port>/<dbname>` |
-| `REDIS_URL` | **Yes** | Connection string for managed Redis instance.<br>Format: `rediss://default:<password>@<host>:<port>` (TLS enabled) or `redis://...` |
-| `JWT_SECRET_KEY` | **Yes** | High-entropy secret key for signing JWT tokens (min 32 characters).<br>*(Alias: `JWT_SECRET`)* |
-| `FERNET_SECRET_KEY` | **Yes** | 32 url-safe base64-encoded bytes for tenant API key encryption at rest.<br>Generate via: `python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"` |
-| `KIMI_API_KEY` | **Yes** | API key for NVIDIA NIM / Kimi Moonshot AI engine.<br>*(Alias: `MOONSHOT_API_KEY`)* |
+| `REDIS_URL` | **Yes** | Connection string from Render Key Value instance (Redis-protocol compatible).<br>Format: `rediss://default:<password>@<host>:<port>` (TLS enabled) or `redis://...` |
+| `JWT_SECRET_KEY` | **Yes** | High-entropy secret key for signing JWT tokens (min 32 characters). Must not match dev placeholders.<br>*(Alias: `JWT_SECRET`)* |
+| `FERNET_SECRET_KEY` | **Yes** | 32 url-safe base64-encoded bytes for tenant API key encryption at rest. Must not match dev placeholders.<br>Generate via: `python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"` |
+| `KIMI_API_KEY` | **Yes** | Moonshot AI / Kimi API key for FRIDAY engine.<br>*(Alias: `MOONSHOT_API_KEY`)* |
 | `KIMI_BASE_URL` | Optional | Provider endpoint (defaults to `https://api.moonshot.ai/v1`) |
 | `SENTRY_DSN` | Optional | Sentry DSN URL for production error telemetry and alerting |
-| `ENVIRONMENT` | **Yes** | Set to `production` |
-| `PORT` | **Yes** | Set to `8000` (matches exposed Docker port and Uvicorn binding) |
-| `ALLOWED_ORIGINS` | **Yes** | Comma-separated list of allowed frontend domains (e.g. `https://app.yourdomain.com`) |
+| `ENVIRONMENT` | **Yes** | Set to `production` (enforces strict credential validation and JSON logging) |
+| `PORT` | Optional | Injected automatically by Render; backend binds dynamically via `${PORT:-8000}` |
+| `ALLOWED_ORIGINS` | **Yes** | Comma-separated list of allowed frontend domains (e.g. `https://aicto-platform.onrender.com`) |
 
 ---
 
 ## 4. Managed Services vs Local Compose
 
 - **Local Development**: In local development with `docker compose`, services use internal Docker DNS names (`postgres`, `redis`).
-- **Render Production**: Replace local URLs with the private or internal URLs provided by Render's managed PostgreSQL (with TimescaleDB extension enabled) and managed Redis services. These are set exclusively in Render's dashboard and must **never** be committed to the repository.
+- **Render Production**: Replace local URLs with the private or internal URLs provided by Render's managed PostgreSQL and Render Key Value instances.
+- **TimescaleDB Extension**: Render's managed PostgreSQL supports TimescaleDB. The `0002_enable_timescaledb` Alembic migration automatically activates the extension (`CREATE EXTENSION IF NOT EXISTS timescaledb CASCADE;`) during the Pre-Deploy Command. No manual database steps are required.
+
 
 ---
 

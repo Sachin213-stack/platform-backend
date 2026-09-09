@@ -1,6 +1,6 @@
 import os
 from typing import List, Union
-from pydantic import AnyHttpUrl, field_validator
+from pydantic import AnyHttpUrl, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -81,6 +81,35 @@ class Settings(BaseSettings):
     LOG_FILE_PATH: str = "logs/aicto.log"
     LOG_MAX_BYTES: int = 10 * 1024 * 1024  # 10 MB per file
     LOG_BACKUP_COUNT: int = 5  # Keep 5 rotated backup files
+
+    @model_validator(mode="after")
+    def validate_production_secrets(self) -> "Settings":
+        """Enforces that real, secure credentials are supplied in production environments."""
+        if self.ENVIRONMENT == "production":
+            insecure_jwt_defaults = {
+                "aicto-super-secret-key-change-in-production-min32chars",
+                "change-this-super-secret-key-in-production-min-32-chars-long",
+                "secret",
+                "",
+            }
+            if self.JWT_SECRET_KEY in insecure_jwt_defaults or len(self.JWT_SECRET_KEY) < 32:
+                raise ValueError(
+                    "Insecure or missing JWT_SECRET_KEY in production! "
+                    "You must configure a unique, high-entropy secret (minimum 32 characters) in Render's environment variables."
+                )
+
+            insecure_fernet_defaults = {
+                "aASb7vcf4bLs3HfHDw3xJnen9pKnUf0Nnbwx6ElLAxQ=",
+                "ZI4lUaSB3LjrE4LrN25nmQvx98H5pc4Q29pprotD6EA=",
+                "",
+            }
+            if self.FERNET_SECRET_KEY in insecure_fernet_defaults:
+                raise ValueError(
+                    "Insecure or default FERNET_SECRET_KEY in production! "
+                    "You must generate and configure a unique FERNET_SECRET_KEY in Render's environment variables. "
+                    "Generate via: python -c 'from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())'"
+                )
+        return self
 
 
 settings = Settings()

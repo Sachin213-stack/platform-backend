@@ -34,3 +34,4 @@ pandas==3.0.5
 
 # Utilities & Observability
 python-dotenv==1.2.3
+sentry-sdk>=2.0.0
