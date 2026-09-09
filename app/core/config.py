@@ -39,6 +39,26 @@ class Settings(BaseSettings):
     DB_POOL_SIZE: int = 10
     DB_MAX_OVERFLOW: int = 20
 
+    @field_validator("DATABASE_URL", mode="before")
+    @classmethod
+    def assemble_database_url(cls, v: str) -> str:
+        if isinstance(v, str) and v:
+            if v.startswith("postgres://"):
+                v = v.replace("postgres://", "postgresql+asyncpg://", 1)
+            elif v.startswith("postgresql://") and not v.startswith("postgresql+asyncpg://"):
+                v = v.replace("postgresql://", "postgresql+asyncpg://", 1)
+            if "sslmode=" in v:
+                v = v.replace("sslmode=require", "ssl=require").replace("sslmode=prefer", "ssl=prefer")
+        return v
+
+    @field_validator("DATABASE_SYNC_URL", mode="before")
+    @classmethod
+    def assemble_database_sync_url(cls, v: str) -> str:
+        if isinstance(v, str) and v:
+            if v.startswith("postgres://"):
+                v = v.replace("postgres://", "postgresql://", 1)
+        return v
+
     # Redis
     REDIS_URL: str = "redis://localhost:6379/0"
     REDIS_STREAM_KEY: str = "telemetry:events:stream"
