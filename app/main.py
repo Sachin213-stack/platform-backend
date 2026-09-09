@@ -37,19 +37,23 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         logger.error("Failed to initialize Redis connection during startup: %s", e, exc_info=True)
 
-    # Create tables automatically in development mode
-    if settings.ENVIRONMENT == "development":
-        try:
-            from app.db.session import is_db_available
-            if await is_db_available():
+    # Database initialization & migrations
+    try:
+        from app.db.session import is_db_available
+        if await is_db_available(force_check=True):
+            if settings.ENVIRONMENT == "development":
                 async with engine.begin() as conn:
                     await conn.run_sync(Base.metadata.create_all)
-                logger.info("Database tables initialized successfully")
+                logger.info("Database tables initialized successfully (development mode)")
             else:
-                db_host = settings.DATABASE_URL.split("@")[-1] if "@" in settings.DATABASE_URL else "localhost:5432"
-                logger.info("PostgreSQL offline on %s; operating in decoupled development mode", db_host)
-        except Exception as e:
-            logger.info("PostgreSQL offline (%s); operating in decoupled development mode", e)
+                from app.db.migrate import run_upgrade
+                run_upgrade("head")
+                logger.info("Alembic database migrations applied successfully to head")
+        else:
+            db_host = settings.DATABASE_URL.split("@")[-1] if "@" in settings.DATABASE_URL else "localhost:5432"
+            logger.info("PostgreSQL offline on %s; operating in decoupled mode", db_host)
+    except Exception as e:
+        logger.warning("Database migration during startup skipped or failed: %s; operating in decoupled mode", e)
 
     yield
 
