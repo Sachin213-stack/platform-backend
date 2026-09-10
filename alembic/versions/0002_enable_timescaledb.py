@@ -19,12 +19,28 @@ depends_on: Union[str, Sequence[str], None] = None
 
 def upgrade() -> None:
     # -------------------------------------------------------------
-    # Enable TimescaleDB extension on PostgreSQL
-    # Required for Render Managed PostgreSQL instances where the extension
-    # is available but must be enabled per database.
+    # Enable TimescaleDB extension on PostgreSQL if supported
     # -------------------------------------------------------------
-    op.execute("CREATE EXTENSION IF NOT EXISTS timescaledb CASCADE;")
+    op.execute(
+        """
+        DO $$
+        BEGIN
+            CREATE EXTENSION IF NOT EXISTS timescaledb CASCADE;
+        EXCEPTION WHEN OTHERS THEN
+            RAISE NOTICE 'timescaledb extension unavailable or skipped: %', SQLERRM;
+        END $$;
+        """
+    )
 
 
 def downgrade() -> None:
-    op.execute("DROP EXTENSION IF EXISTS timescaledb CASCADE;")
+    op.execute(
+        """
+        DO $$
+        BEGIN
+            DROP EXTENSION IF EXISTS timescaledb CASCADE;
+        EXCEPTION WHEN OTHERS THEN
+            NULL;
+        END $$;
+        """
+    )

@@ -18,7 +18,11 @@ class Settings(BaseSettings):
     ENVIRONMENT: str = "development"
     DEBUG: bool = True
     PORT: int = 8000
-    ALLOWED_ORIGINS: Union[List[str], str] = ["http://localhost:5173", "http://localhost:3000"]
+    ALLOWED_ORIGINS: Union[List[str], str] = [
+        "http://localhost:5173",
+        "http://localhost:3000",
+        "https://platform-3aya.onrender.com",
+    ]
 
     @field_validator("ALLOWED_ORIGINS", mode="before")
     @classmethod
@@ -48,7 +52,14 @@ class Settings(BaseSettings):
             elif v.startswith("postgresql://") and not v.startswith("postgresql+asyncpg://"):
                 v = v.replace("postgresql://", "postgresql+asyncpg://", 1)
             if "sslmode=" in v:
-                v = v.replace("sslmode=require", "ssl=require").replace("sslmode=prefer", "ssl=prefer")
+                v = v.replace("sslmode=require", "ssl=require").replace("sslmode=prefer", "ssl=prefer").replace("sslmode=disable", "ssl=disable")
+            if "ssl=true" in v.lower():
+                v = v.replace("ssl=true", "ssl=require").replace("ssl=True", "ssl=require")
+            # For remote database hosts (e.g. Render Managed Postgres), enforce ssl=require if not explicitly specified
+            if "@" in v and not any(h in v.split("@")[-1] for h in ["localhost", "127.0.0.1", "postgres:5432", "postgres/"]):
+                if "ssl=" not in v and "sslmode=" not in v:
+                    separator = "&" if "?" in v else "?"
+                    v = f"{v}{separator}ssl=require"
         return v
 
     @field_validator("DATABASE_SYNC_URL", mode="before")
@@ -57,6 +68,10 @@ class Settings(BaseSettings):
         if isinstance(v, str) and v:
             if v.startswith("postgres://"):
                 v = v.replace("postgres://", "postgresql://", 1)
+            if "@" in v and not any(h in v.split("@")[-1] for h in ["localhost", "127.0.0.1", "postgres:5432", "postgres/"]):
+                if "sslmode=" not in v and "ssl=" not in v:
+                    separator = "&" if "?" in v else "?"
+                    v = f"{v}{separator}sslmode=require"
         return v
 
     # Redis
