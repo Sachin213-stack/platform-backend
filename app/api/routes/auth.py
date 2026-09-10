@@ -57,14 +57,20 @@ async def register(data: UserRegister, db: AsyncSession = Depends(get_db)):
     base_slug = data.business_name.lower().replace(" ", "-")
     slug = f"{base_slug}-{uuid.uuid4().hex[:6]}"
 
-    user_id = str(uuid.uuid4())
-    biz_id = str(uuid.uuid4())
+    biz_uuid = uuid.uuid4()
+    user_uuid = uuid.uuid4()
+    biz_id = str(biz_uuid)
+    user_id = str(user_uuid)
     role = "owner"
 
     if db_online:
         try:
+            from app.db.session import set_rls_context
+            await set_rls_context(db, biz_id)
+
             # Create Business
             new_business = Business(
+                id=biz_uuid,
                 name=data.business_name,
                 slug=slug,
                 plan_tier="starter",
@@ -75,7 +81,8 @@ async def register(data: UserRegister, db: AsyncSession = Depends(get_db)):
 
             # Create Owner User
             new_user = User(
-                business_id=new_business.id,
+                id=user_uuid,
+                business_id=biz_uuid,
                 email=data.email,
                 hashed_password=get_password_hash(data.password),
                 full_name=data.full_name or data.business_name,
