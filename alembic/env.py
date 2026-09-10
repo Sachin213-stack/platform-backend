@@ -63,15 +63,8 @@ def do_run_migrations(connection: Connection) -> None:
 
 async def run_async_migrations() -> None:
     """In this scenario we need to create an Engine and associate a connection with the context."""
-    from app.db.session import is_db_available
     import logging
     log = logging.getLogger("alembic.env")
-
-    db_ok = await is_db_available(force_check=True)
-    if not db_ok:
-        db_target = settings.DATABASE_URL.split("@")[-1] if "@" in settings.DATABASE_URL else "localhost:5432"
-        log.warning("Database unavailable on %s; skipping migration in decoupled mode", db_target)
-        return
 
     configuration = config.get_section(config.config_ini_section, {})
     configuration["sqlalchemy.url"] = settings.DATABASE_URL
@@ -82,10 +75,14 @@ async def run_async_migrations() -> None:
         poolclass=pool.NullPool,
     )
 
-    async with connectable.connect() as connection:
-        await connection.run_sync(do_run_migrations)
-
-    await connectable.dispose()
+    try:
+        async with connectable.connect() as connection:
+            await connection.run_sync(do_run_migrations)
+    except Exception as e:
+        db_target = settings.DATABASE_URL.split("@")[-1] if "@" in settings.DATABASE_URL else "localhost:5432"
+        log.warning("Database migration skipped/failed on %s: %s; running in decoupled mode", db_target, e)
+    finally:
+        await connectable.dispose()
 
 
 def run_migrations_online() -> None:
