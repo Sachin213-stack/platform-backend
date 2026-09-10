@@ -209,23 +209,55 @@ async def login(data: UserLogin, db: AsyncSession = Depends(get_db)):
 
 
 @router.post("/demo", response_model=Token)
-async def demo_login():
+async def demo_login(db: AsyncSession = Depends(get_db)):
     """Quick 1-click token generation for demo / testing session."""
-    demo_user_id = "00000000-0000-0000-0000-000000000001"
-    demo_biz_id = "11111111-1111-1111-1111-111111111111"
+    demo_user_id = uuid.UUID("00000000-0000-0000-0000-000000000001")
+    demo_biz_id = uuid.UUID("11111111-1111-1111-1111-111111111111")
     jti = uuid.uuid4().hex
 
+    if await is_db_available():
+        try:
+            biz_stmt = select(Business).where(Business.id == demo_biz_id)
+            biz = (await db.execute(biz_stmt)).scalars().first()
+            if not biz:
+                biz = Business(
+                    id=demo_biz_id,
+                    name="Apex Retail Global",
+                    slug="apex-retail-global",
+                    plan_tier="enterprise",
+                    retention_days=90,
+                )
+                db.add(biz)
+                await db.flush()
+
+            user_stmt = select(User).where(User.id == demo_user_id)
+            user = (await db.execute(user_stmt)).scalars().first()
+            if not user:
+                user = User(
+                    id=demo_user_id,
+                    business_id=demo_biz_id,
+                    email="demo.cto@aicto.io",
+                    hashed_password="",
+                    full_name="Alex Vance (Lead Architect)",
+                    role="owner",
+                    is_active=True,
+                )
+                db.add(user)
+            await db.commit()
+        except Exception as e:
+            logger.warning("Could not auto-seed demo tenant in DB: %s", e)
+
     access_token = create_access_token({
-        "sub": demo_user_id,
-        "business_id": demo_biz_id,
+        "sub": str(demo_user_id),
+        "business_id": str(demo_biz_id),
         "role": "owner",
         "email": "demo.cto@aicto.io",
         "name": "Alex Vance (Lead Architect)",
         "jti": jti,
     })
     refresh_token = create_refresh_token({
-        "sub": demo_user_id,
-        "business_id": demo_biz_id,
+        "sub": str(demo_user_id),
+        "business_id": str(demo_biz_id),
         "role": "owner",
     })
 
@@ -233,8 +265,8 @@ async def demo_login():
     return Token(
         access_token=access_token,
         refresh_token=refresh_token,
-        business_id=demo_biz_id,
-        user_id=demo_user_id,
+        business_id=str(demo_biz_id),
+        user_id=str(demo_user_id),
     )
 
 
