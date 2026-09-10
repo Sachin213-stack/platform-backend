@@ -37,8 +37,8 @@ async def _probe_db() -> bool:
 async def is_db_available(force_check: bool = False) -> bool:
     """
     Checks if the primary PostgreSQL database is reachable.
-    Caches availability status (20s TTL) to avoid repeating connection timeouts.
-    Uses 1.0s probe timeout to fail fast when offline.
+    Caches availability status (15-20s TTL) to avoid repeating connection timeouts.
+    Uses 8.0s timeout during startup / force_check and 3.0s for routine checks.
     """
     global _db_available, _db_last_checked
     now = time.time()
@@ -46,10 +46,12 @@ async def is_db_available(force_check: bool = False) -> bool:
     if not force_check and _db_available is not None and (now - _db_last_checked < cache_ttl):
         return _db_available
 
+    probe_timeout = 8.0 if force_check else 3.0
     try:
-        await asyncio.wait_for(_probe_db(), timeout=1.0)
+        await asyncio.wait_for(_probe_db(), timeout=probe_timeout)
         _db_available = True
-    except Exception:
+    except Exception as e:
+        logger.warning("Database probe failed: %s (%s)", type(e).__name__, e)
         _db_available = False
 
     _db_last_checked = now
