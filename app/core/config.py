@@ -89,13 +89,13 @@ class Settings(BaseSettings):
     # python -c 'from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())'
     FERNET_SECRET_KEY: str = "aASb7vcf4bLs3HfHDw3xJnen9pKnUf0Nnbwx6ElLAxQ="
 
-    # Kimi (Moonshot AI) LLM Configuration (Sole LLM Provider)
+    # Kimi (Moonshot AI) LLM Configuration (Sole LLM Provider via NVIDIA NIM)
     KIMI_API_KEY: str = ""
     MOONSHOT_API_KEY: str = ""
-    KIMI_BASE_URL: str = "https://api.moonshot.ai/v1"
-    KIMI_MODEL_PRIMARY: str = "kimi-k3"
-    KIMI_MODEL_SECONDARY: str = "kimi-k2.6"
-    KIMI_MODEL_FALLBACK: str = "moonshot-v1-128k"
+    KIMI_BASE_URL: str = "https://integrate.api.nvidia.com/v1"
+    KIMI_MODEL_PRIMARY: str = "moonshotai/kimi-k3"
+    KIMI_MODEL_SECONDARY: str = "meta/llama-3.2-11b-vision-instruct"
+    KIMI_MODEL_FALLBACK: str = "nvidia/nemotron-3.5-lightning-30b-a3b"
     KIMI_TIMEOUT_SECONDS: float = 30.0
 
     @property
@@ -107,7 +107,10 @@ class Settings(BaseSettings):
             or os.getenv("KIMI_API_KEY", "")
             or os.getenv("MOONSHOT_API_KEY", "")
         )
-        return (key or "").strip('"\'').strip()
+        cleaned = (key or "").strip('"\'').strip()
+        if cleaned.startswith("Bearer "):
+            cleaned = cleaned[7:].strip()
+        return cleaned.rstrip(",").strip('"\'')
 
     # Observability & Logging
     SENTRY_DSN: str = ""

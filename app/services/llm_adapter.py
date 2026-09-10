@@ -96,10 +96,26 @@ KIMI_TOOLS = [
 ]
 
 
+def normalize_model_id(model: str | None) -> str:
+    """Normalizes any model identifier or alias into a valid NVIDIA NIM model identifier."""
+    if not model:
+        return (settings.KIMI_MODEL_PRIMARY or "moonshotai/kimi-k3").strip('"\'')
+    m = model.strip().strip('"\'')
+    alias_map = {
+        "kimi-k3": "moonshotai/kimi-k3",
+        "kimi-k2.6": "moonshotai/kimi-k3",
+        "kimi": "moonshotai/kimi-k3",
+        "moonshot-v1-128k": "meta/llama-3.2-11b-vision-instruct",
+        "llama-3.2-11b": "meta/llama-3.2-11b-vision-instruct",
+        "nemotron-3.5": "nvidia/nemotron-3.5-lightning-30b-a3b",
+    }
+    return alias_map.get(m, m)
+
+
 class LLMAdapter:
     """
     Production-grade LLM adapter for FRIDAY AI-CTO powered solely by Kimi (Moonshot AI):
-    - Kimi model priority fallback chain (kimi-k3 -> kimi-k2.6 -> moonshot-v1-128k)
+    - Kimi model priority fallback chain (moonshotai/kimi-k3 -> meta/llama-3.2-11b-vision-instruct -> nvidia/nemotron-3.5-lightning-30b-a3b)
     - Native OpenAI-compatible tool use / function calling for live ops queries and action proposals
     - Real-time Server-Sent Events (SSE) streaming support
     - Half-open circuit breaker (Redis-backed cooldown + single probe interval per model tier)
@@ -117,31 +133,32 @@ class LLMAdapter:
     def endpoints(self) -> List[Dict[str, Any]]:
         """Returns Kimi model tiers in priority fallback order."""
         api_key = settings.effective_kimi_api_key
-        base_url = (settings.KIMI_BASE_URL or "https://api.moonshot.ai/v1").rstrip("/")
+        raw_base = (settings.KIMI_BASE_URL or "https://integrate.api.nvidia.com/v1").rstrip("/")
+        base_url = raw_base[:-17] if raw_base.endswith("/chat/completions") else raw_base
         return [
             {
                 "id": "kimi-tier-1-primary",
                 "base_url": base_url,
                 "api_key": api_key,
-                "model": (settings.KIMI_MODEL_PRIMARY or "kimi-k3").strip('"\''),
+                "model": normalize_model_id(settings.KIMI_MODEL_PRIMARY),
                 "context_window": 1000000,
-                "tier_name": "Kimi K3 (Flagship Reasoning)",
+                "tier_name": "Kimi K3 (Moonshot AI)",
             },
             {
                 "id": "kimi-tier-2-secondary",
                 "base_url": base_url,
                 "api_key": api_key,
-                "model": (settings.KIMI_MODEL_SECONDARY or "kimi-k2.6").strip('"\''),
-                "context_window": 256000,
-                "tier_name": "Kimi K2.6 (High-Speed Ops)",
+                "model": normalize_model_id(settings.KIMI_MODEL_SECONDARY),
+                "context_window": 128000,
+                "tier_name": "Llama 3.2 11B (Fast Ops)",
             },
             {
                 "id": "kimi-tier-3-fallback",
                 "base_url": base_url,
                 "api_key": api_key,
-                "model": (settings.KIMI_MODEL_FALLBACK or "moonshot-v1-128k").strip('"\''),
+                "model": normalize_model_id(settings.KIMI_MODEL_FALLBACK),
                 "context_window": 128000,
-                "tier_name": "Moonshot V1 128K (Fallback)",
+                "tier_name": "Nemotron 3.5 Lightning (Fallback)",
             },
         ]
 
@@ -511,17 +528,18 @@ class LLMAdapter:
         configured_endpoints = self.endpoints
 
         if requested_model:
-            matched = [ep for ep in configured_endpoints if ep["model"] == requested_model]
-            rest = [ep for ep in configured_endpoints if ep["model"] != requested_model]
+            norm_model = normalize_model_id(requested_model)
+            matched = [ep for ep in configured_endpoints if ep["model"] == norm_model]
+            rest = [ep for ep in configured_endpoints if ep["model"] != norm_model]
             if matched:
                 configured_endpoints = matched + rest
             else:
                 custom_ep = {
-                    "id": f"kimi-custom-{requested_model}",
+                    "id": f"kimi-custom-{norm_model}",
                     "base_url": configured_endpoints[0]["base_url"],
                     "api_key": configured_endpoints[0]["api_key"],
-                    "model": requested_model,
-                    "tier_name": f"Kimi ({requested_model})",
+                    "model": norm_model,
+                    "tier_name": f"Kimi ({norm_model})",
                     "context_window": 128000,
                 }
                 configured_endpoints = [custom_ep] + configured_endpoints
@@ -645,8 +663,9 @@ class LLMAdapter:
         configured_endpoints = self.endpoints
 
         if requested_model:
-            matched = [ep for ep in configured_endpoints if ep["model"] == requested_model]
-            rest = [ep for ep in configured_endpoints if ep["model"] != requested_model]
+            norm_model = normalize_model_id(requested_model)
+            matched = [ep for ep in configured_endpoints if ep["model"] == norm_model]
+            rest = [ep for ep in configured_endpoints if ep["model"] != norm_model]
             configured_endpoints = matched + rest if matched else configured_endpoints
 
         for ep in configured_endpoints:
