@@ -53,6 +53,31 @@ def upgrade() -> None:
         """
     )
 
+    tenant_tables = [
+        "telemetry_events",
+        "anomalies",
+        "forecasts",
+        "alert_rules",
+        "conversations",
+        "api_keys",
+    ]
+
+    for table in tenant_tables:
+        op.execute(f"DROP POLICY IF EXISTS {table}_tenant_isolation_policy ON {table};")
+        op.execute(
+            f"""
+            CREATE POLICY {table}_tenant_isolation_policy ON {table}
+            FOR ALL
+            USING (
+                business_id = NULLIF(current_setting('app.current_business_id', true), '')::uuid
+            )
+            WITH CHECK (
+                NULLIF(current_setting('app.current_business_id', true), '') IS NULL
+                OR business_id = NULLIF(current_setting('app.current_business_id', true), '')::uuid
+            );
+            """
+        )
+
 
 def downgrade() -> None:
     op.execute("DROP POLICY IF EXISTS users_tenant_isolation_policy ON users;")
@@ -83,3 +108,27 @@ def downgrade() -> None:
         );
         """
     )
+
+    tenant_tables = [
+        "telemetry_events",
+        "anomalies",
+        "forecasts",
+        "alert_rules",
+        "conversations",
+        "api_keys",
+    ]
+
+    for table in tenant_tables:
+        op.execute(f"DROP POLICY IF EXISTS {table}_tenant_isolation_policy ON {table};")
+        op.execute(
+            f"""
+            CREATE POLICY {table}_tenant_isolation_policy ON {table}
+            FOR ALL
+            USING (
+                business_id = NULLIF(current_setting('app.current_business_id', true), '')::uuid
+            )
+            WITH CHECK (
+                business_id = NULLIF(current_setting('app.current_business_id', true), '')::uuid
+            );
+            """
+        )
