@@ -108,7 +108,7 @@ async def register(data: UserRegister, db: AsyncSession = Depends(get_db)):
                 logger.error("Failed to create user account for %s: %s", data.email, e, exc_info=True)
                 raise HTTPException(
                     status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                    detail="Failed to create user account",
+                    detail=f"Failed to create user account: {type(e).__name__}: {e}",
                 )
             logger.info("Registration processed in dev fallback mode (DB offline): %s", e)
     else:
