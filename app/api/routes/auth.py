@@ -20,6 +20,7 @@ from app.api.schemas.auth import (
     UserLogin,
     Token,
     UserResponse,
+    UserOrgUpdate,
 )
 from app.api.dependencies.auth import get_current_user_and_business
 from app.services.redis_service import redis_service
@@ -295,22 +296,24 @@ async def get_me(
     current_user: User = Depends(get_current_user_and_business),
     db: AsyncSession = Depends(get_db),
 ):
-    # Fetch business name safely
-    business_name = "Apex Retail Global"
+    from app.api.routes.users import build_user_response
+    business = None
     if await is_db_available():
         try:
             result = await db.execute(select(Business).where(Business.id == current_user.business_id))
             business = result.scalars().first()
-            if business:
-                business_name = business.name
         except Exception as e:
-            logger.debug("Could not fetch business name for user %s (business_id=%s): %s", current_user.id, current_user.business_id, e)
+            logger.debug("Could not fetch business name for user %s: %s", current_user.id, e)
 
-    return UserResponse(
-        id=current_user.id,
-        email=current_user.email,
-        full_name=current_user.full_name,
-        role=current_user.role,
-        business_id=current_user.business_id,
-        business_name=business_name,
-    )
+    return build_user_response(current_user, business)
+
+
+@router.put("/me", response_model=UserResponse)
+@router.patch("/me", response_model=UserResponse)
+async def update_me(
+    data: UserOrgUpdate,
+    current_user: User = Depends(get_current_user_and_business),
+    db: AsyncSession = Depends(get_db),
+):
+    from app.api.routes.users import update_my_profile
+    return await update_my_profile(data=data, current_user=current_user, db=db)

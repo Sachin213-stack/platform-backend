@@ -23,6 +23,7 @@ from app.api.routes.auth import router as auth_router
 from app.api.routes.dashboard import router as dashboard_router
 from app.api.routes.ingestion import router as ingestion_router
 from app.api.routes.friday import router as friday_router
+from app.api.routes.users import router as users_router
 
 
 @asynccontextmanager
@@ -142,6 +143,7 @@ app.include_router(auth_router, prefix=settings.API_V1_STR)
 app.include_router(dashboard_router, prefix=settings.API_V1_STR)
 app.include_router(ingestion_router, prefix=settings.API_V1_STR)
 app.include_router(friday_router, prefix=settings.API_V1_STR)
+app.include_router(users_router, prefix=settings.API_V1_STR)
 
 
 @app.get("/")

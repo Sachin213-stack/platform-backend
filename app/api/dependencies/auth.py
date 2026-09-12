@@ -25,18 +25,6 @@ async def get_current_user_and_business(
     extracts the business_id, sets the request context and Postgres RLS session.
     """
     if not credentials:
-        if settings.ENVIRONMENT == "development":
-            dev_user = User(
-                id=uuid.UUID("00000000-0000-0000-0000-000000000001"),
-                business_id=uuid.UUID("11111111-1111-1111-1111-111111111111"),
-                email="dev.admin@aicto.io",
-                hashed_password="",
-                full_name="AI-CTO Lead Engineer",
-                role="owner",
-                is_active=True,
-            )
-            business_id_ctx.set(str(dev_user.business_id))
-            return dev_user
         logger.warning("Auth failure on %s: Missing authorization credentials", request.url.path)
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,

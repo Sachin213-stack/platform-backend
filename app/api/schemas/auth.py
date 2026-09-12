@@ -33,11 +33,29 @@ class UserLogin(BaseModel):
 
 class UserResponse(BaseModel):
     id: uuid.UUID
-    email: str
+    name: str = ""
     full_name: Optional[str] = None
+    email: str
     role: str
+    avatar_url: Optional[str] = None
     business_id: uuid.UUID
     business_name: Optional[str] = None
+    business_type: Optional[str] = "ecommerce"
+    ops_email: Optional[str] = None
+    timezone: Optional[str] = "America/New_York"
+    currency: Optional[str] = "USD"
+    auto_refresh_interval: Optional[str] = "30s"
 
     class Config:
         from_attributes = True
+
+
+class UserOrgUpdate(BaseModel):
+    name: Optional[str] = Field(None, min_length=1, max_length=255)
+    full_name: Optional[str] = Field(None, min_length=1, max_length=255)
+    business_name: Optional[str] = Field(None, min_length=2, max_length=255)
+    business_type: Optional[str] = Field(None, max_length=50)
+    ops_email: Optional[EmailStr] = None
+    timezone: Optional[str] = None
+    currency: Optional[str] = None
+    auto_refresh_interval: Optional[str] = None

@@ -1,6 +1,6 @@
 import uuid
 from typing import List, Optional
-from sqlalchemy import String, Boolean, ForeignKey, Integer, JSON
+from sqlalchemy import String, Boolean, ForeignKey, Integer, JSON, LargeBinary
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.dialects.postgresql import UUID
 
@@ -18,6 +18,8 @@ class Business(Base, TimestampMixin):
     slug: Mapped[str] = mapped_column(String(255), unique=True, index=True, nullable=False)
     plan_tier: Mapped[str] = mapped_column(String(50), default="starter", nullable=False)
     retention_days: Mapped[int] = mapped_column(Integer, default=30, nullable=False)
+    business_type: Mapped[str] = mapped_column(String(50), default="ecommerce", nullable=False)
+    ops_email: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
     settings_config: Mapped[Optional[dict]] = mapped_column(JSON, default=dict)
 
@@ -42,6 +44,8 @@ class User(Base, TimestampMixin):
     hashed_password: Mapped[str] = mapped_column(String(255), nullable=False)
     full_name: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
     role: Mapped[str] = mapped_column(String(50), default="member", nullable=False)  # owner, admin, member
+    avatar_data: Mapped[Optional[bytes]] = mapped_column(LargeBinary, nullable=True)
+    avatar_mime_type: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
 
     business: Mapped["Business"] = relationship("Business", back_populates="users")

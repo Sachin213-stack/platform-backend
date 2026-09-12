@@ -80,7 +80,8 @@ async def run_async_migrations() -> None:
             await connection.run_sync(do_run_migrations)
     except Exception as e:
         db_target = settings.DATABASE_URL.split("@")[-1] if "@" in settings.DATABASE_URL else "localhost:5432"
-        log.warning("Database migration skipped/failed on %s: %s; running in decoupled mode", db_target, e)
+        log.error("Database migration failed on %s: %s", db_target, e, exc_info=True)
+        raise
     finally:
         await connectable.dispose()
 
