@@ -11,6 +11,10 @@ class Token(BaseModel):
     user_id: str
 
 
+class TokenRefreshRequest(BaseModel):
+    refresh_token: str
+
+
 class TokenPayload(BaseModel):
     sub: str  # user_id
     business_id: str

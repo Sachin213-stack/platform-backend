@@ -19,6 +19,13 @@ class TestFridayKimiIntegration(unittest.TestCase):
 
     def setUp(self):
         self.client = TestClient(app)
+        from app.core.security import create_access_token
+        self.token = create_access_token({
+            "sub": str(uuid.uuid4()),
+            "business_id": str(uuid.uuid4()),
+            "role": "owner",
+        })
+        self.auth_headers = {"Authorization": f"Bearer {self.token}"}
 
     def test_missing_api_key_fails_loudly(self):
         """Verify that missing KIMI_API_KEY returns HTTP 503 with explicit error message, not mock data."""
@@ -27,7 +34,8 @@ class TestFridayKimiIntegration(unittest.TestCase):
                 with patch.dict("os.environ", {"KIMI_API_KEY": "", "MOONSHOT_API_KEY": ""}, clear=False):
                     resp = self.client.post(
                         "/api/friday/chat",
-                        json={"message": "What is our current crash risk?"}
+                        json={"message": "What is our current crash risk?"},
+                        headers=self.auth_headers,
                     )
                     self.assertEqual(resp.status_code, 503)
                     data = resp.json()
@@ -51,7 +59,8 @@ class TestFridayKimiIntegration(unittest.TestCase):
                     "conversation_id": "conv-default",
                     "message": "Status report",
                     "context_hints": {"source_widget": "CrashRiskMeter", "liveCrashRisk": 4.2}
-                }
+                },
+                headers=self.auth_headers,
             )
             self.assertEqual(resp.status_code, 200)
             data = resp.json()
@@ -93,7 +102,8 @@ class TestFridayKimiIntegration(unittest.TestCase):
                 "action_type": "scale_service",
                 "service": "checkout-v2",
                 "params": {"replicas": 8},
-            }
+            },
+            headers=self.auth_headers,
         )
         self.assertEqual(resp.status_code, 200)
         data = resp.json()

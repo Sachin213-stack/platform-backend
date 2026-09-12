@@ -42,6 +42,15 @@ async def get_current_user_and_business(
             headers={"WWW-Authenticate": "Bearer"},
         )
 
+    # Disallow refresh tokens from accessing resource routes
+    if payload.get("type") == "refresh":
+        logger.warning("Auth failure on %s: Refresh token presented where access token required", request.url.path)
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Refresh token cannot be used for resource authentication",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
     # Check if token is in Redis revocation blacklist
     jti = payload.get("jti")
     if jti and await redis_service.is_token_revoked(jti):

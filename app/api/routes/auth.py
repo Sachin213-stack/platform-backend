@@ -19,6 +19,7 @@ from app.api.schemas.auth import (
     UserRegister,
     UserLogin,
     Token,
+    TokenRefreshRequest,
     UserResponse,
     UserOrgUpdate,
 )
@@ -129,6 +130,8 @@ async def register(data: UserRegister, db: AsyncSession = Depends(get_db)):
         "sub": user_id,
         "business_id": biz_id,
         "role": role,
+        "email": data.email,
+        "name": data.full_name or data.business_name,
     })
 
     return Token(
@@ -198,6 +201,8 @@ async def login(data: UserLogin, db: AsyncSession = Depends(get_db)):
         "sub": user_id,
         "business_id": biz_id,
         "role": role,
+        "email": data.email,
+        "name": user_name,
     })
 
     logger.info("User logged in successfully: email=%s, user_id=%s, business_id=%s", data.email, user_id, biz_id)
@@ -206,6 +211,98 @@ async def login(data: UserLogin, db: AsyncSession = Depends(get_db)):
         refresh_token=refresh_token,
         business_id=biz_id,
         user_id=user_id,
+    )
+
+
+@router.post("/refresh", response_model=Token)
+async def refresh_token(data: TokenRefreshRequest, db: AsyncSession = Depends(get_db)):
+    """
+    Exchanges a valid refresh token for a new access token and fresh refresh token.
+    Validates token signature, expiration, and ensures token type is 'refresh'.
+    """
+    if not data.refresh_token:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Refresh token is required",
+        )
+
+    payload = decode_token(data.refresh_token)
+    if not payload:
+        logger.warning("Token refresh rejected: Invalid or expired refresh token")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid or expired refresh token",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    if payload.get("type") != "refresh":
+        logger.warning("Token refresh rejected: Token presented is not a refresh token (type=%s)", payload.get("type"))
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Provided token is not a valid refresh token",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    user_id_str = payload.get("sub")
+    business_id_str = payload.get("business_id")
+    role = payload.get("role", "owner")
+
+    if not user_id_str or not business_id_str:
+        logger.warning("Token refresh rejected: Missing claims (has_sub=%s, has_business_id=%s)", bool(user_id_str), bool(business_id_str))
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Refresh token payload is missing required claims",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    user_email = payload.get("email") or ""
+    user_name = payload.get("name") or ""
+
+    from app.db.session import is_db_available
+    if await is_db_available():
+        try:
+            user_uuid = uuid.UUID(user_id_str)
+            stmt = select(User).where(User.id == user_uuid)
+            user = (await db.execute(stmt)).scalars().first()
+            if user:
+                if not user.is_active:
+                    logger.warning("Token refresh rejected: User %s is deactivated", user_id_str)
+                    raise HTTPException(
+                        status_code=status.HTTP_403_FORBIDDEN,
+                        detail="User account is deactivated",
+                    )
+                user_email = user.email
+                user_name = user.full_name
+                role = user.role
+        except HTTPException:
+            raise
+        except Exception as e:
+            logger.debug("Could not verify user in DB during token refresh: %s", e)
+
+    # Issue fresh access token and fresh refresh token
+    jti = uuid.uuid4().hex
+    new_access_token = create_access_token({
+        "sub": user_id_str,
+        "business_id": business_id_str,
+        "role": role,
+        "email": user_email,
+        "name": user_name,
+        "jti": jti,
+    })
+    new_refresh_token = create_refresh_token({
+        "sub": user_id_str,
+        "business_id": business_id_str,
+        "role": role,
+        "email": user_email,
+        "name": user_name,
+    })
+
+    logger.info("Token refreshed successfully for user %s (business %s)", user_id_str, business_id_str)
+    return Token(
+        access_token=new_access_token,
+        refresh_token=new_refresh_token,
+        business_id=business_id_str,
+        user_id=user_id_str,
     )
 
 
@@ -260,6 +357,8 @@ async def demo_login(db: AsyncSession = Depends(get_db)):
         "sub": str(demo_user_id),
         "business_id": str(demo_biz_id),
         "role": "owner",
+        "email": "demo.cto@aicto.io",
+        "name": "Alex Vance (Lead Architect)",
     })
 
     logger.info("Demo token generated for demo user %s (tenant %s)", demo_user_id, demo_biz_id)
