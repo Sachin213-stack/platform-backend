@@ -30,8 +30,20 @@ class AnomalyItem(BaseModel):
     detected_at: datetime
 
 
+class TelemetryEventItem(BaseModel):
+    id: str
+    event_type: str
+    endpoint: Optional[str] = None
+    response_time_ms: float = 0.0
+    status_code: int = 200
+    timestamp: datetime
+    message: Optional[str] = None
+    level: str = "info"
+
+
 class DashboardMetricsResponse(BaseModel):
     kpis: KPISummary
     capacity: CapacityMetrics
     recent_anomalies: List[AnomalyItem]
+    recent_telemetry_events: List[TelemetryEventItem] = []
     cache_hit: bool = False
