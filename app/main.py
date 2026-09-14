@@ -145,6 +145,17 @@ app.include_router(ingestion_router, prefix=settings.API_V1_STR)
 app.include_router(friday_router, prefix=settings.API_V1_STR)
 app.include_router(users_router, prefix=settings.API_V1_STR)
 
+# Also support /api/v1 routes
+# TODO: If settings.API_V1_STR is meant to be the canonical prefix going forward,
+# deprecate the non-prefixed (/api) routes rather than maintaining both indefinitely.
+if settings.API_V1_STR != "/api/v1":
+    app.include_router(health_router, prefix="/api/v1")
+    app.include_router(auth_router, prefix="/api/v1")
+    app.include_router(dashboard_router, prefix="/api/v1")
+    app.include_router(ingestion_router, prefix="/api/v1")
+    app.include_router(friday_router, prefix="/api/v1")
+    app.include_router(users_router, prefix="/api/v1")
+
 
 @app.get("/")
 async def root():
