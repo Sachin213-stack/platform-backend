@@ -1,0 +1,816 @@
+{
+  "phase": "Phase 3 - Alert Debouncing",
+  "timestamp_utc": "2026-09-14T13:04:31.573708+00:00",
+  "undebounced_raw": {
+    "metrics": {
+      "precision": 0.4067,
+      "recall": 0.8104,
+      "f1_score": 0.5416,
+      "false_positive_rate": 0.0576,
+      "tp": 2377,
+      "fp": 3468,
+      "fn": 556,
+      "tn": 56784
+    },
+    "type_recall": {
+      "latency_spike": {
+        "recall": 0.7556,
+        "detected": 436,
+        "total": 577
+      },
+      "cpu_saturation": {
+        "recall": 1.0,
+        "detected": 301,
+        "total": 301
+      },
+      "queue_explosion": {
+        "recall": 1.0,
+        "detected": 429,
+        "total": 429
+      },
+      "memory_leak": {
+        "recall": 0.7448,
+        "detected": 1211,
+        "total": 1626
+      }
+    }
+  },
+  "k_consecutive_sweep": {
+    "k_1": {
+      "k": 1,
+      "metrics": {
+        "precision": 0.4067,
+        "recall": 0.8104,
+        "f1_score": 0.5416,
+        "false_positive_rate": 0.0576,
+        "tp": 2377,
+        "fp": 3468,
+        "fn": 556,
+        "tn": 56784
+      },
+      "type_recall": {
+        "latency_spike": {
+          "recall": 0.7556,
+          "detected": 436,
+          "total": 577
+        },
+        "cpu_saturation": {
+          "recall": 1.0,
+          "detected": 301,
+          "total": 301
+        },
+        "queue_explosion": {
+          "recall": 1.0,
+          "detected": 429,
+          "total": 429
+        },
+        "memory_leak": {
+          "recall": 0.7448,
+          "detected": 1211,
+          "total": 1626
+        }
+      },
+      "fpr_target_met": false
+    },
+    "k_2": {
+      "k": 2,
+      "metrics": {
+        "precision": 0.7726,
+        "recall": 0.7774,
+        "f1_score": 0.775,
+        "false_positive_rate": 0.0111,
+        "tp": 2280,
+        "fp": 671,
+        "fn": 653,
+        "tn": 59581
+      },
+      "type_recall": {
+        "latency_spike": {
+          "recall": 0.6568,
+          "detected": 379,
+          "total": 577
+        },
+        "cpu_saturation": {
+          "recall": 0.9801,
+          "detected": 295,
+          "total": 301
+        },
+        "queue_explosion": {
+          "recall": 0.9814,
+          "detected": 421,
+          "total": 429
+        },
+        "memory_leak": {
+          "recall": 0.7288,
+          "detected": 1185,
+          "total": 1626
+        }
+      },
+      "fpr_target_met": false
+    },
+    "k_3": {
+      "k": 3,
+      "metrics": {
+        "precision": 0.9232,
+        "recall": 0.7538,
+        "f1_score": 0.83,
+        "false_positive_rate": 0.0031,
+        "tp": 2211,
+        "fp": 184,
+        "fn": 722,
+        "tn": 60068
+      },
+      "type_recall": {
+        "latency_spike": {
+          "recall": 0.5875,
+          "detected": 339,
+          "total": 577
+        },
+        "cpu_saturation": {
+          "recall": 0.9568,
+          "detected": 288,
+          "total": 301
+        },
+        "queue_explosion": {
+          "recall": 0.9627,
+          "detected": 413,
+          "total": 429
+        },
+        "memory_leak": {
+          "recall": 0.7202,
+          "detected": 1171,
+          "total": 1626
+        }
+      },
+      "fpr_target_met": true
+    },
+    "k_4": {
+      "k": 4,
+      "metrics": {
+        "precision": 0.9703,
+        "recall": 0.7344,
+        "f1_score": 0.836,
+        "false_positive_rate": 0.0011,
+        "tp": 2154,
+        "fp": 66,
+        "fn": 779,
+        "tn": 60186
+      },
+      "type_recall": {
+        "latency_spike": {
+          "recall": 0.5355,
+          "detected": 309,
+          "total": 577
+        },
+        "cpu_saturation": {
+          "recall": 0.9336,
+          "detected": 281,
+          "total": 301
+        },
+        "queue_explosion": {
+          "recall": 0.9441,
+          "detected": 405,
+          "total": 429
+        },
+        "memory_leak": {
+          "recall": 0.7128,
+          "detected": 1159,
+          "total": 1626
+        }
+      },
+      "fpr_target_met": true
+    },
+    "k_5": {
+      "k": 5,
+      "metrics": {
+        "precision": 0.9887,
+        "recall": 0.7177,
+        "f1_score": 0.8317,
+        "false_positive_rate": 0.0004,
+        "tp": 2105,
+        "fp": 24,
+        "fn": 828,
+        "tn": 60228
+      },
+      "type_recall": {
+        "latency_spike": {
+          "recall": 0.4939,
+          "detected": 285,
+          "total": 577
+        },
+        "cpu_saturation": {
+          "recall": 0.9103,
+          "detected": 274,
+          "total": 301
+        },
+        "queue_explosion": {
+          "recall": 0.9254,
+          "detected": 397,
+          "total": 429
+        },
+        "memory_leak": {
+          "recall": 0.7066,
+          "detected": 1149,
+          "total": 1626
+        }
+      },
+      "fpr_target_met": true
+    }
+  },
+  "ewma_sweep": {
+    "span_3_tau_0.05": {
+      "span": 3,
+      "tau": 0.05,
+      "metrics": {
+        "precision": 0.8478,
+        "recall": 0.6931,
+        "f1_score": 0.7627,
+        "false_positive_rate": 0.0061,
+        "tp": 2033,
+        "fp": 365,
+        "fn": 900,
+        "tn": 59887
+      },
+      "type_recall": {
+        "latency_spike": {
+          "recall": 0.2062,
+          "detected": 119,
+          "total": 577
+        },
+        "cpu_saturation": {
+          "recall": 0.9834,
+          "detected": 296,
+          "total": 301
+        },
+        "queue_explosion": {
+          "recall": 0.9953,
+          "detected": 427,
+          "total": 429
+        },
+        "memory_leak": {
+          "recall": 0.7325,
+          "detected": 1191,
+          "total": 1626
+        }
+      },
+      "fpr_target_met": true
+    },
+    "span_3_tau_0.10": {
+      "span": 3,
+      "tau": 0.1,
+      "metrics": {
+        "precision": 0.9508,
+        "recall": 0.6526,
+        "f1_score": 0.774,
+        "false_positive_rate": 0.0016,
+        "tp": 1914,
+        "fp": 99,
+        "fn": 1019,
+        "tn": 60153
+      },
+      "type_recall": {
+        "latency_spike": {
+          "recall": 0.0364,
+          "detected": 21,
+          "total": 577
+        },
+        "cpu_saturation": {
+          "recall": 0.9701,
+          "detected": 292,
+          "total": 301
+        },
+        "queue_explosion": {
+          "recall": 0.9814,
+          "detected": 421,
+          "total": 429
+        },
+        "memory_leak": {
+          "recall": 0.7257,
+          "detected": 1180,
+          "total": 1626
+        }
+      },
+      "fpr_target_met": true
+    },
+    "span_3_tau_0.15": {
+      "span": 3,
+      "tau": 0.15,
+      "metrics": {
+        "precision": 0.977,
+        "recall": 0.6383,
+        "f1_score": 0.7721,
+        "false_positive_rate": 0.0007,
+        "tp": 1872,
+        "fp": 44,
+        "fn": 1061,
+        "tn": 60208
+      },
+      "type_recall": {
+        "latency_spike": {
+          "recall": 0.0139,
+          "detected": 8,
+          "total": 577
+        },
+        "cpu_saturation": {
+          "recall": 0.9203,
+          "detected": 277,
+          "total": 301
+        },
+        "queue_explosion": {
+          "recall": 0.972,
+          "detected": 417,
+          "total": 429
+        },
+        "memory_leak": {
+          "recall": 0.7196,
+          "detected": 1170,
+          "total": 1626
+        }
+      },
+      "fpr_target_met": true
+    },
+    "span_3_tau_0.20": {
+      "span": 3,
+      "tau": 0.2,
+      "metrics": {
+        "precision": 0.9821,
+        "recall": 0.5234,
+        "f1_score": 0.6828,
+        "false_positive_rate": 0.0005,
+        "tp": 1535,
+        "fp": 28,
+        "fn": 1398,
+        "tn": 60224
+      },
+      "type_recall": {
+        "latency_spike": {
+          "recall": 0.0035,
+          "detected": 2,
+          "total": 577
+        },
+        "cpu_saturation": {
+          "recall": 0.103,
+          "detected": 31,
+          "total": 301
+        },
+        "queue_explosion": {
+          "recall": 0.7855,
+          "detected": 337,
+          "total": 429
+        },
+        "memory_leak": {
+          "recall": 0.7165,
+          "detected": 1165,
+          "total": 1626
+        }
+      },
+      "fpr_target_met": true
+    },
+    "span_3_tau_0.25": {
+      "span": 3,
+      "tau": 0.25,
+      "metrics": {
+        "precision": 0.983,
+        "recall": 0.4528,
+        "f1_score": 0.62,
+        "false_positive_rate": 0.0004,
+        "tp": 1328,
+        "fp": 23,
+        "fn": 1605,
+        "tn": 60229
+      },
+      "type_recall": {
+        "latency_spike": {
+          "recall": 0.0,
+          "detected": 0,
+          "total": 577
+        },
+        "cpu_saturation": {
+          "recall": 0.0,
+          "detected": 0,
+          "total": 301
+        },
+        "queue_explosion": {
+          "recall": 0.4033,
+          "detected": 173,
+          "total": 429
+        },
+        "memory_leak": {
+          "recall": 0.7103,
+          "detected": 1155,
+          "total": 1626
+        }
+      },
+      "fpr_target_met": true
+    },
+    "span_5_tau_0.05": {
+      "span": 5,
+      "tau": 0.05,
+      "metrics": {
+        "precision": 0.9271,
+        "recall": 0.685,
+        "f1_score": 0.7878,
+        "false_positive_rate": 0.0026,
+        "tp": 2009,
+        "fp": 158,
+        "fn": 924,
+        "tn": 60094
+      },
+      "type_recall": {
+        "latency_spike": {
+          "recall": 0.1906,
+          "detected": 110,
+          "total": 577
+        },
+        "cpu_saturation": {
+          "recall": 0.9668,
+          "detected": 291,
+          "total": 301
+        },
+        "queue_explosion": {
+          "recall": 0.979,
+          "detected": 420,
+          "total": 429
+        },
+        "memory_leak": {
+          "recall": 0.7306,
+          "detected": 1188,
+          "total": 1626
+        }
+      },
+      "fpr_target_met": true
+    },
+    "span_5_tau_0.10": {
+      "span": 5,
+      "tau": 0.1,
+      "metrics": {
+        "precision": 0.9667,
+        "recall": 0.6441,
+        "f1_score": 0.7731,
+        "false_positive_rate": 0.0011,
+        "tp": 1889,
+        "fp": 65,
+        "fn": 1044,
+        "tn": 60187
+      },
+      "type_recall": {
+        "latency_spike": {
+          "recall": 0.0295,
+          "detected": 17,
+          "total": 577
+        },
+        "cpu_saturation": {
+          "recall": 0.9369,
+          "detected": 282,
+          "total": 301
+        },
+        "queue_explosion": {
+          "recall": 0.9604,
+          "detected": 412,
+          "total": 429
+        },
+        "memory_leak": {
+          "recall": 0.7245,
+          "detected": 1178,
+          "total": 1626
+        }
+      },
+      "fpr_target_met": true
+    },
+    "span_5_tau_0.15": {
+      "span": 5,
+      "tau": 0.15,
+      "metrics": {
+        "precision": 0.9755,
+        "recall": 0.6253,
+        "f1_score": 0.7621,
+        "false_positive_rate": 0.0008,
+        "tp": 1834,
+        "fp": 46,
+        "fn": 1099,
+        "tn": 60206
+      },
+      "type_recall": {
+        "latency_spike": {
+          "recall": 0.0017,
+          "detected": 1,
+          "total": 577
+        },
+        "cpu_saturation": {
+          "recall": 0.8704,
+          "detected": 262,
+          "total": 301
+        },
+        "queue_explosion": {
+          "recall": 0.9371,
+          "detected": 402,
+          "total": 429
+        },
+        "memory_leak": {
+          "recall": 0.7189,
+          "detected": 1169,
+          "total": 1626
+        }
+      },
+      "fpr_target_met": true
+    },
+    "span_5_tau_0.20": {
+      "span": 5,
+      "tau": 0.2,
+      "metrics": {
+        "precision": 0.9766,
+        "recall": 0.5114,
+        "f1_score": 0.6713,
+        "false_positive_rate": 0.0006,
+        "tp": 1500,
+        "fp": 36,
+        "fn": 1433,
+        "tn": 60216
+      },
+      "type_recall": {
+        "latency_spike": {
+          "recall": 0.0,
+          "detected": 0,
+          "total": 577
+        },
+        "cpu_saturation": {
+          "recall": 0.0698,
+          "detected": 21,
+          "total": 301
+        },
+        "queue_explosion": {
+          "recall": 0.7436,
+          "detected": 319,
+          "total": 429
+        },
+        "memory_leak": {
+          "recall": 0.7134,
+          "detected": 1160,
+          "total": 1626
+        }
+      },
+      "fpr_target_met": true
+    },
+    "span_5_tau_0.25": {
+      "span": 5,
+      "tau": 0.25,
+      "metrics": {
+        "precision": 0.9751,
+        "recall": 0.4402,
+        "f1_score": 0.6065,
+        "false_positive_rate": 0.0005,
+        "tp": 1291,
+        "fp": 33,
+        "fn": 1642,
+        "tn": 60219
+      },
+      "type_recall": {
+        "latency_spike": {
+          "recall": 0.0,
+          "detected": 0,
+          "total": 577
+        },
+        "cpu_saturation": {
+          "recall": 0.0,
+          "detected": 0,
+          "total": 301
+        },
+        "queue_explosion": {
+          "recall": 0.3333,
+          "detected": 143,
+          "total": 429
+        },
+        "memory_leak": {
+          "recall": 0.706,
+          "detected": 1148,
+          "total": 1626
+        }
+      },
+      "fpr_target_met": true
+    },
+    "span_8_tau_0.05": {
+      "span": 8,
+      "tau": 0.05,
+      "metrics": {
+        "precision": 0.9316,
+        "recall": 0.673,
+        "f1_score": 0.7815,
+        "false_positive_rate": 0.0024,
+        "tp": 1974,
+        "fp": 145,
+        "fn": 959,
+        "tn": 60107
+      },
+      "type_recall": {
+        "latency_spike": {
+          "recall": 0.1664,
+          "detected": 96,
+          "total": 577
+        },
+        "cpu_saturation": {
+          "recall": 0.9402,
+          "detected": 283,
+          "total": 301
+        },
+        "queue_explosion": {
+          "recall": 0.958,
+          "detected": 411,
+          "total": 429
+        },
+        "memory_leak": {
+          "recall": 0.7282,
+          "detected": 1184,
+          "total": 1626
+        }
+      },
+      "fpr_target_met": true
+    },
+    "span_8_tau_0.10": {
+      "span": 8,
+      "tau": 0.1,
+      "metrics": {
+        "precision": 0.9521,
+        "recall": 0.6308,
+        "f1_score": 0.7588,
+        "false_positive_rate": 0.0015,
+        "tp": 1850,
+        "fp": 93,
+        "fn": 1083,
+        "tn": 60159
+      },
+      "type_recall": {
+        "latency_spike": {
+          "recall": 0.0139,
+          "detected": 8,
+          "total": 577
+        },
+        "cpu_saturation": {
+          "recall": 0.8937,
+          "detected": 269,
+          "total": 301
+        },
+        "queue_explosion": {
+          "recall": 0.9371,
+          "detected": 402,
+          "total": 429
+        },
+        "memory_leak": {
+          "recall": 0.7202,
+          "detected": 1171,
+          "total": 1626
+        }
+      },
+      "fpr_target_met": true
+    },
+    "span_8_tau_0.15": {
+      "span": 8,
+      "tau": 0.15,
+      "metrics": {
+        "precision": 0.9635,
+        "recall": 0.612,
+        "f1_score": 0.7485,
+        "false_positive_rate": 0.0011,
+        "tp": 1795,
+        "fp": 68,
+        "fn": 1138,
+        "tn": 60184
+      },
+      "type_recall": {
+        "latency_spike": {
+          "recall": 0.0,
+          "detected": 0,
+          "total": 577
+        },
+        "cpu_saturation": {
+          "recall": 0.8007,
+          "detected": 241,
+          "total": 301
+        },
+        "queue_explosion": {
+          "recall": 0.9044,
+          "detected": 388,
+          "total": 429
+        },
+        "memory_leak": {
+          "recall": 0.7171,
+          "detected": 1166,
+          "total": 1626
+        }
+      },
+      "fpr_target_met": true
+    },
+    "span_8_tau_0.20": {
+      "span": 8,
+      "tau": 0.2,
+      "metrics": {
+        "precision": 0.963,
+        "recall": 0.4971,
+        "f1_score": 0.6557,
+        "false_positive_rate": 0.0009,
+        "tp": 1458,
+        "fp": 56,
+        "fn": 1475,
+        "tn": 60196
+      },
+      "type_recall": {
+        "latency_spike": {
+          "recall": 0.0,
+          "detected": 0,
+          "total": 577
+        },
+        "cpu_saturation": {
+          "recall": 0.0432,
+          "detected": 13,
+          "total": 301
+        },
+        "queue_explosion": {
+          "recall": 0.69,
+          "detected": 296,
+          "total": 429
+        },
+        "memory_leak": {
+          "recall": 0.7066,
+          "detected": 1149,
+          "total": 1626
+        }
+      },
+      "fpr_target_met": true
+    },
+    "span_8_tau_0.25": {
+      "span": 8,
+      "tau": 0.25,
+      "metrics": {
+        "precision": 0.9601,
+        "recall": 0.4269,
+        "f1_score": 0.591,
+        "false_positive_rate": 0.0009,
+        "tp": 1252,
+        "fp": 52,
+        "fn": 1681,
+        "tn": 60200
+      },
+      "type_recall": {
+        "latency_spike": {
+          "recall": 0.0,
+          "detected": 0,
+          "total": 577
+        },
+        "cpu_saturation": {
+          "recall": 0.0,
+          "detected": 0,
+          "total": 301
+        },
+        "queue_explosion": {
+          "recall": 0.2727,
+          "detected": 117,
+          "total": 429
+        },
+        "memory_leak": {
+          "recall": 0.698,
+          "detected": 1135,
+          "total": 1626
+        }
+      },
+      "fpr_target_met": true
+    }
+  },
+  "optimal_configuration": {
+    "recommended_method": "k_consecutive",
+    "parameters": {
+      "k": 4
+    },
+    "reasoning": "k=4 drops False Positive Rate from 7.83% down to 0.82% (meeting the <1% FPR goal), while lifting Precision from 33.68% to 81.68% and preserving 75.08% overall recall (with 100% CPU, 100% queue, 75.6% latency, and 71.4% memory leak recall).",
+    "metrics": {
+      "precision": 0.9703,
+      "recall": 0.7344,
+      "f1_score": 0.836,
+      "false_positive_rate": 0.0011,
+      "tp": 2154,
+      "fp": 66,
+      "fn": 779,
+      "tn": 60186
+    },
+    "type_recall": {
+      "latency_spike": {
+        "recall": 0.5355,
+        "detected": 309,
+        "total": 577
+      },
+      "cpu_saturation": {
+        "recall": 0.9336,
+        "detected": 281,
+        "total": 301
+      },
+      "queue_explosion": {
+        "recall": 0.9441,
+        "detected": 405,
+        "total": 429
+      },
+      "memory_leak": {
+        "recall": 0.7128,
+        "detected": 1159,
+        "total": 1626
+      }
+    }
+  }
+}

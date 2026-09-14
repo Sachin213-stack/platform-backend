@@ -1,0 +1,692 @@
+{
+  "phase": "Phase 1 - Feature Separation",
+  "timestamp_utc": "2026-09-14T12:56:22.914796+00:00",
+  "baseline": {
+    "description": "StandardScaler on all 6 metrics (system + business)",
+    "global_metrics": {
+      "precision": 0.3339,
+      "recall": 0.4845,
+      "f1_score": 0.3953,
+      "roc_auc": 0.7857,
+      "false_positive_rate": 0.0471,
+      "confusion_matrix": {
+        "true_negatives": 57417,
+        "false_positives": 2835,
+        "false_negatives": 1512,
+        "true_positives": 1421
+      }
+    },
+    "type_recall": {
+      "latency_spike": {
+        "recall": 0.7556,
+        "detected": 436,
+        "total": 577
+      },
+      "cpu_saturation": {
+        "recall": 1.0,
+        "detected": 301,
+        "total": 301
+      },
+      "queue_explosion": {
+        "recall": 1.0,
+        "detected": 429,
+        "total": 429
+      },
+      "memory_leak": {
+        "recall": 0.1568,
+        "detected": 255,
+        "total": 1626
+      }
+    },
+    "tenant_metrics": {
+      "11111111-1111-1111-1111-111111111111": {
+        "business_name": "Apex Retail Global",
+        "test_rows": 6712,
+        "anomalies": 163,
+        "precision": 0.1265,
+        "recall": 0.8466,
+        "f1_score": 0.2201,
+        "false_positive_rate": 0.1455,
+        "false_positives": 953,
+        "true_positives": 138
+      },
+      "22222222-2222-2222-2222-222222222222": {
+        "business_name": "Nexus Cloud SaaS",
+        "test_rows": 4278,
+        "anomalies": 132,
+        "precision": 1.0,
+        "recall": 0.8636,
+        "f1_score": 0.9268,
+        "false_positive_rate": 0.0,
+        "false_positives": 0,
+        "true_positives": 114
+      },
+      "33333333-3333-3333-3333-333333333333": {
+        "business_name": "Vortex Media Streaming",
+        "test_rows": 6722,
+        "anomalies": 26,
+        "precision": 0.0575,
+        "recall": 1.0,
+        "f1_score": 0.1088,
+        "false_positive_rate": 0.0636,
+        "false_positives": 426,
+        "true_positives": 26
+      },
+      "44444444-4444-4444-4444-444444444444": {
+        "business_name": "CyberFin Banking Core",
+        "test_rows": 6984,
+        "anomalies": 798,
+        "precision": 0.9453,
+        "recall": 0.3897,
+        "f1_score": 0.5519,
+        "false_positive_rate": 0.0029,
+        "false_positives": 18,
+        "true_positives": 311
+      },
+      "55555555-5555-5555-5555-555555555555": {
+        "business_name": "HealthPulse Telehealth",
+        "test_rows": 4192,
+        "anomalies": 359,
+        "precision": 0.3239,
+        "recall": 0.6045,
+        "f1_score": 0.4218,
+        "false_positive_rate": 0.1182,
+        "false_positives": 453,
+        "true_positives": 217
+      },
+      "66666666-6666-6666-6666-666666666666": {
+        "business_name": "Logix Logistics Net",
+        "test_rows": 2297,
+        "anomalies": 9,
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1_score": 0.0,
+        "false_positive_rate": 0.0,
+        "false_positives": 0,
+        "true_positives": 0
+      },
+      "77777777-7777-7777-7777-777777777777": {
+        "business_name": "Hyperion Gaming Mesh",
+        "test_rows": 6725,
+        "anomalies": 186,
+        "precision": 0.6421,
+        "recall": 0.6559,
+        "f1_score": 0.6489,
+        "false_positive_rate": 0.0104,
+        "false_positives": 68,
+        "true_positives": 122
+      },
+      "88888888-8888-8888-8888-888888888888": {
+        "business_name": "Nova Payment Gateway",
+        "test_rows": 6988,
+        "anomalies": 327,
+        "precision": 0.9091,
+        "recall": 0.1223,
+        "f1_score": 0.2156,
+        "false_positive_rate": 0.0006,
+        "false_positives": 4,
+        "true_positives": 40
+      },
+      "99999999-9999-9999-9999-999999999999": {
+        "business_name": "Starlight CRM Enterprise",
+        "test_rows": 4242,
+        "anomalies": 91,
+        "precision": 1.0,
+        "recall": 0.9341,
+        "f1_score": 0.9659,
+        "false_positive_rate": 0.0,
+        "false_positives": 0,
+        "true_positives": 85
+      },
+      "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa": {
+        "business_name": "AeroFlow IoT Telemetry",
+        "test_rows": 2418,
+        "anomalies": 219,
+        "precision": 0.5581,
+        "recall": 0.1096,
+        "f1_score": 0.1832,
+        "false_positive_rate": 0.0086,
+        "false_positives": 19,
+        "true_positives": 24
+      },
+      "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb": {
+        "business_name": "Zenith AI Inference",
+        "test_rows": 4472,
+        "anomalies": 432,
+        "precision": 0.9771,
+        "recall": 0.4931,
+        "f1_score": 0.6554,
+        "false_positive_rate": 0.0012,
+        "false_positives": 5,
+        "true_positives": 213
+      },
+      "cccccccc-cccc-cccc-cccc-cccccccccccc": {
+        "business_name": "PulseWave Analytics Engine",
+        "test_rows": 7155,
+        "anomalies": 191,
+        "precision": 0.1284,
+        "recall": 0.6859,
+        "f1_score": 0.2164,
+        "false_positive_rate": 0.1277,
+        "false_positives": 889,
+        "true_positives": 131
+      }
+    }
+  },
+  "option_a_conditional_scaling": {
+    "description": "Tenant-conditional scaling for business metrics (scaled on active retail tenants, 0 for SaaS)",
+    "global_metrics": {
+      "precision": 0.1288,
+      "recall": 0.6045,
+      "f1_score": 0.2123,
+      "roc_auc": 0.7463,
+      "false_positive_rate": 0.1991,
+      "confusion_matrix": {
+        "true_negatives": 48255,
+        "false_positives": 11997,
+        "false_negatives": 1160,
+        "true_positives": 1773
+      }
+    },
+    "type_recall": {
+      "latency_spike": {
+        "recall": 0.844,
+        "detected": 487,
+        "total": 577
+      },
+      "cpu_saturation": {
+        "recall": 1.0,
+        "detected": 301,
+        "total": 301
+      },
+      "queue_explosion": {
+        "recall": 1.0,
+        "detected": 429,
+        "total": 429
+      },
+      "memory_leak": {
+        "recall": 0.3419,
+        "detected": 556,
+        "total": 1626
+      }
+    },
+    "tenant_metrics": {
+      "11111111-1111-1111-1111-111111111111": {
+        "business_name": "Apex Retail Global",
+        "test_rows": 6712,
+        "anomalies": 163,
+        "precision": 0.0249,
+        "recall": 1.0,
+        "f1_score": 0.0485,
+        "false_positive_rate": 0.9756,
+        "false_positives": 6389,
+        "true_positives": 163
+      },
+      "22222222-2222-2222-2222-222222222222": {
+        "business_name": "Nexus Cloud SaaS",
+        "test_rows": 4278,
+        "anomalies": 132,
+        "precision": 0.9915,
+        "recall": 0.8864,
+        "f1_score": 0.936,
+        "false_positive_rate": 0.0002,
+        "false_positives": 1,
+        "true_positives": 117
+      },
+      "33333333-3333-3333-3333-333333333333": {
+        "business_name": "Vortex Media Streaming",
+        "test_rows": 6722,
+        "anomalies": 26,
+        "precision": 0.0452,
+        "recall": 1.0,
+        "f1_score": 0.0865,
+        "false_positive_rate": 0.082,
+        "false_positives": 549,
+        "true_positives": 26
+      },
+      "44444444-4444-4444-4444-444444444444": {
+        "business_name": "CyberFin Banking Core",
+        "test_rows": 6984,
+        "anomalies": 798,
+        "precision": 0.9668,
+        "recall": 0.4737,
+        "f1_score": 0.6358,
+        "false_positive_rate": 0.0021,
+        "false_positives": 13,
+        "true_positives": 378
+      },
+      "55555555-5555-5555-5555-555555555555": {
+        "business_name": "HealthPulse Telehealth",
+        "test_rows": 4192,
+        "anomalies": 359,
+        "precision": 0.0869,
+        "recall": 0.9944,
+        "f1_score": 0.1599,
+        "false_positive_rate": 0.9783,
+        "false_positives": 3750,
+        "true_positives": 357
+      },
+      "66666666-6666-6666-6666-666666666666": {
+        "business_name": "Logix Logistics Net",
+        "test_rows": 2297,
+        "anomalies": 9,
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1_score": 0.0,
+        "false_positive_rate": 0.0004,
+        "false_positives": 1,
+        "true_positives": 0
+      },
+      "77777777-7777-7777-7777-777777777777": {
+        "business_name": "Hyperion Gaming Mesh",
+        "test_rows": 6725,
+        "anomalies": 186,
+        "precision": 0.4604,
+        "recall": 0.6559,
+        "f1_score": 0.541,
+        "false_positive_rate": 0.0219,
+        "false_positives": 143,
+        "true_positives": 122
+      },
+      "88888888-8888-8888-8888-888888888888": {
+        "business_name": "Nova Payment Gateway",
+        "test_rows": 6988,
+        "anomalies": 327,
+        "precision": 0.9231,
+        "recall": 0.3303,
+        "f1_score": 0.4865,
+        "false_positive_rate": 0.0014,
+        "false_positives": 9,
+        "true_positives": 108
+      },
+      "99999999-9999-9999-9999-999999999999": {
+        "business_name": "Starlight CRM Enterprise",
+        "test_rows": 4242,
+        "anomalies": 91,
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1_score": 1.0,
+        "false_positive_rate": 0.0,
+        "false_positives": 0,
+        "true_positives": 91
+      },
+      "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa": {
+        "business_name": "AeroFlow IoT Telemetry",
+        "test_rows": 2418,
+        "anomalies": 219,
+        "precision": 0.8596,
+        "recall": 0.2237,
+        "f1_score": 0.3551,
+        "false_positive_rate": 0.0036,
+        "false_positives": 8,
+        "true_positives": 49
+      },
+      "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb": {
+        "business_name": "Zenith AI Inference",
+        "test_rows": 4472,
+        "anomalies": 432,
+        "precision": 0.9105,
+        "recall": 0.5417,
+        "f1_score": 0.6792,
+        "false_positive_rate": 0.0057,
+        "false_positives": 23,
+        "true_positives": 234
+      },
+      "cccccccc-cccc-cccc-cccc-cccccccccccc": {
+        "business_name": "PulseWave Analytics Engine",
+        "test_rows": 7155,
+        "anomalies": 191,
+        "precision": 0.1033,
+        "recall": 0.6702,
+        "f1_score": 0.179,
+        "false_positive_rate": 0.1595,
+        "false_positives": 1111,
+        "true_positives": 128
+      }
+    }
+  },
+  "option_b_column_transformer": {
+    "description": "ColumnTransformer: StandardScaler(system) + RobustScaler(business, with_centering=False)",
+    "global_metrics": {
+      "precision": 0.3339,
+      "recall": 0.4845,
+      "f1_score": 0.3953,
+      "roc_auc": 0.7857,
+      "false_positive_rate": 0.0471,
+      "confusion_matrix": {
+        "true_negatives": 57417,
+        "false_positives": 2835,
+        "false_negatives": 1512,
+        "true_positives": 1421
+      }
+    },
+    "type_recall": {
+      "latency_spike": {
+        "recall": 0.7556,
+        "detected": 436,
+        "total": 577
+      },
+      "cpu_saturation": {
+        "recall": 1.0,
+        "detected": 301,
+        "total": 301
+      },
+      "queue_explosion": {
+        "recall": 1.0,
+        "detected": 429,
+        "total": 429
+      },
+      "memory_leak": {
+        "recall": 0.1568,
+        "detected": 255,
+        "total": 1626
+      }
+    },
+    "tenant_metrics": {
+      "11111111-1111-1111-1111-111111111111": {
+        "business_name": "Apex Retail Global",
+        "test_rows": 6712,
+        "anomalies": 163,
+        "precision": 0.1265,
+        "recall": 0.8466,
+        "f1_score": 0.2201,
+        "false_positive_rate": 0.1455,
+        "false_positives": 953,
+        "true_positives": 138
+      },
+      "22222222-2222-2222-2222-222222222222": {
+        "business_name": "Nexus Cloud SaaS",
+        "test_rows": 4278,
+        "anomalies": 132,
+        "precision": 1.0,
+        "recall": 0.8636,
+        "f1_score": 0.9268,
+        "false_positive_rate": 0.0,
+        "false_positives": 0,
+        "true_positives": 114
+      },
+      "33333333-3333-3333-3333-333333333333": {
+        "business_name": "Vortex Media Streaming",
+        "test_rows": 6722,
+        "anomalies": 26,
+        "precision": 0.0575,
+        "recall": 1.0,
+        "f1_score": 0.1088,
+        "false_positive_rate": 0.0636,
+        "false_positives": 426,
+        "true_positives": 26
+      },
+      "44444444-4444-4444-4444-444444444444": {
+        "business_name": "CyberFin Banking Core",
+        "test_rows": 6984,
+        "anomalies": 798,
+        "precision": 0.9453,
+        "recall": 0.3897,
+        "f1_score": 0.5519,
+        "false_positive_rate": 0.0029,
+        "false_positives": 18,
+        "true_positives": 311
+      },
+      "55555555-5555-5555-5555-555555555555": {
+        "business_name": "HealthPulse Telehealth",
+        "test_rows": 4192,
+        "anomalies": 359,
+        "precision": 0.3239,
+        "recall": 0.6045,
+        "f1_score": 0.4218,
+        "false_positive_rate": 0.1182,
+        "false_positives": 453,
+        "true_positives": 217
+      },
+      "66666666-6666-6666-6666-666666666666": {
+        "business_name": "Logix Logistics Net",
+        "test_rows": 2297,
+        "anomalies": 9,
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1_score": 0.0,
+        "false_positive_rate": 0.0,
+        "false_positives": 0,
+        "true_positives": 0
+      },
+      "77777777-7777-7777-7777-777777777777": {
+        "business_name": "Hyperion Gaming Mesh",
+        "test_rows": 6725,
+        "anomalies": 186,
+        "precision": 0.6421,
+        "recall": 0.6559,
+        "f1_score": 0.6489,
+        "false_positive_rate": 0.0104,
+        "false_positives": 68,
+        "true_positives": 122
+      },
+      "88888888-8888-8888-8888-888888888888": {
+        "business_name": "Nova Payment Gateway",
+        "test_rows": 6988,
+        "anomalies": 327,
+        "precision": 0.9091,
+        "recall": 0.1223,
+        "f1_score": 0.2156,
+        "false_positive_rate": 0.0006,
+        "false_positives": 4,
+        "true_positives": 40
+      },
+      "99999999-9999-9999-9999-999999999999": {
+        "business_name": "Starlight CRM Enterprise",
+        "test_rows": 4242,
+        "anomalies": 91,
+        "precision": 1.0,
+        "recall": 0.9341,
+        "f1_score": 0.9659,
+        "false_positive_rate": 0.0,
+        "false_positives": 0,
+        "true_positives": 85
+      },
+      "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa": {
+        "business_name": "AeroFlow IoT Telemetry",
+        "test_rows": 2418,
+        "anomalies": 219,
+        "precision": 0.5581,
+        "recall": 0.1096,
+        "f1_score": 0.1832,
+        "false_positive_rate": 0.0086,
+        "false_positives": 19,
+        "true_positives": 24
+      },
+      "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb": {
+        "business_name": "Zenith AI Inference",
+        "test_rows": 4472,
+        "anomalies": 432,
+        "precision": 0.9771,
+        "recall": 0.4931,
+        "f1_score": 0.6554,
+        "false_positive_rate": 0.0012,
+        "false_positives": 5,
+        "true_positives": 213
+      },
+      "cccccccc-cccc-cccc-cccc-cccccccccccc": {
+        "business_name": "PulseWave Analytics Engine",
+        "test_rows": 7155,
+        "anomalies": 191,
+        "precision": 0.1284,
+        "recall": 0.6859,
+        "f1_score": 0.2164,
+        "false_positive_rate": 0.1277,
+        "false_positives": 889,
+        "true_positives": 131
+      }
+    }
+  },
+  "option_c_system_only": {
+    "description": "System metrics only (response_time_ms, cpu_usage_pct, memory_usage_pct, queue_depth)",
+    "global_metrics": {
+      "precision": 0.2898,
+      "recall": 0.5714,
+      "f1_score": 0.3845,
+      "roc_auc": 0.8012,
+      "false_positive_rate": 0.0682,
+      "confusion_matrix": {
+        "true_negatives": 56144,
+        "false_positives": 4108,
+        "false_negatives": 1257,
+        "true_positives": 1676
+      }
+    },
+    "type_recall": {
+      "latency_spike": {
+        "recall": 0.8007,
+        "detected": 462,
+        "total": 577
+      },
+      "cpu_saturation": {
+        "recall": 1.0,
+        "detected": 301,
+        "total": 301
+      },
+      "queue_explosion": {
+        "recall": 1.0,
+        "detected": 429,
+        "total": 429
+      },
+      "memory_leak": {
+        "recall": 0.2977,
+        "detected": 484,
+        "total": 1626
+      }
+    },
+    "tenant_metrics": {
+      "11111111-1111-1111-1111-111111111111": {
+        "business_name": "Apex Retail Global",
+        "test_rows": 6712,
+        "anomalies": 163,
+        "precision": 0.3382,
+        "recall": 0.8589,
+        "f1_score": 0.4853,
+        "false_positive_rate": 0.0418,
+        "false_positives": 274,
+        "true_positives": 140
+      },
+      "22222222-2222-2222-2222-222222222222": {
+        "business_name": "Nexus Cloud SaaS",
+        "test_rows": 4278,
+        "anomalies": 132,
+        "precision": 0.8676,
+        "recall": 0.8939,
+        "f1_score": 0.8806,
+        "false_positive_rate": 0.0043,
+        "false_positives": 18,
+        "true_positives": 118
+      },
+      "33333333-3333-3333-3333-333333333333": {
+        "business_name": "Vortex Media Streaming",
+        "test_rows": 6722,
+        "anomalies": 26,
+        "precision": 0.0244,
+        "recall": 1.0,
+        "f1_score": 0.0477,
+        "false_positive_rate": 0.155,
+        "false_positives": 1038,
+        "true_positives": 26
+      },
+      "44444444-4444-4444-4444-444444444444": {
+        "business_name": "CyberFin Banking Core",
+        "test_rows": 6984,
+        "anomalies": 798,
+        "precision": 0.88,
+        "recall": 0.4962,
+        "f1_score": 0.6346,
+        "false_positive_rate": 0.0087,
+        "false_positives": 54,
+        "true_positives": 396
+      },
+      "55555555-5555-5555-5555-555555555555": {
+        "business_name": "HealthPulse Telehealth",
+        "test_rows": 4192,
+        "anomalies": 359,
+        "precision": 0.9409,
+        "recall": 0.5766,
+        "f1_score": 0.715,
+        "false_positive_rate": 0.0034,
+        "false_positives": 13,
+        "true_positives": 207
+      },
+      "66666666-6666-6666-6666-666666666666": {
+        "business_name": "Logix Logistics Net",
+        "test_rows": 2297,
+        "anomalies": 9,
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1_score": 0.0,
+        "false_positive_rate": 0.0017,
+        "false_positives": 4,
+        "true_positives": 0
+      },
+      "77777777-7777-7777-7777-777777777777": {
+        "business_name": "Hyperion Gaming Mesh",
+        "test_rows": 6725,
+        "anomalies": 186,
+        "precision": 0.1569,
+        "recall": 0.6882,
+        "f1_score": 0.2555,
+        "false_positive_rate": 0.1052,
+        "false_positives": 688,
+        "true_positives": 128
+      },
+      "88888888-8888-8888-8888-888888888888": {
+        "business_name": "Nova Payment Gateway",
+        "test_rows": 6988,
+        "anomalies": 327,
+        "precision": 0.7677,
+        "recall": 0.3639,
+        "f1_score": 0.4938,
+        "false_positive_rate": 0.0054,
+        "false_positives": 36,
+        "true_positives": 119
+      },
+      "99999999-9999-9999-9999-999999999999": {
+        "business_name": "Starlight CRM Enterprise",
+        "test_rows": 4242,
+        "anomalies": 91,
+        "precision": 1.0,
+        "recall": 0.956,
+        "f1_score": 0.9775,
+        "false_positive_rate": 0.0,
+        "false_positives": 0,
+        "true_positives": 87
+      },
+      "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa": {
+        "business_name": "AeroFlow IoT Telemetry",
+        "test_rows": 2418,
+        "anomalies": 219,
+        "precision": 0.6344,
+        "recall": 0.2694,
+        "f1_score": 0.3782,
+        "false_positive_rate": 0.0155,
+        "false_positives": 34,
+        "true_positives": 59
+      },
+      "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb": {
+        "business_name": "Zenith AI Inference",
+        "test_rows": 4472,
+        "anomalies": 432,
+        "precision": 0.659,
+        "recall": 0.5995,
+        "f1_score": 0.6279,
+        "false_positive_rate": 0.0332,
+        "false_positives": 134,
+        "true_positives": 259
+      },
+      "cccccccc-cccc-cccc-cccc-cccccccccccc": {
+        "business_name": "PulseWave Analytics Engine",
+        "test_rows": 7155,
+        "anomalies": 191,
+        "precision": 0.0702,
+        "recall": 0.7173,
+        "f1_score": 0.1279,
+        "false_positive_rate": 0.2606,
+        "false_positives": 1815,
+        "true_positives": 137
+      }
+    }
+  }
+}

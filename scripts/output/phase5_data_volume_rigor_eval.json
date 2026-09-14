@@ -1,0 +1,112 @@
+{
+  "phase": "Phase 5 - Data Volume & Evaluation Rigor",
+  "timestamp_utc": "2026-09-14T13:07:15.671975+00:00",
+  "temporal_partitions": {
+    "train_rows": 129099,
+    "test_rows": 42270,
+    "validation_out_of_time_rows": 40283,
+    "train_span": "2026-09-07 12:07:17.473935+00:00 to 2026-09-11 16:59:33.376709+00:00",
+    "test_span": "2026-09-11 16:55:09.666504+00:00 to 2026-09-13 02:31:49.281982+00:00",
+    "validation_span": "2026-09-13 02:31:02.408569+00:00 to 2026-09-14 12:07:10.137939+00:00"
+  },
+  "test_set_evaluation": {
+    "overall_metrics": {
+      "precision": 0.9288,
+      "recall": 0.6267,
+      "f1_score": 0.7484,
+      "false_positive_rate": 0.0029,
+      "tp": 1526,
+      "fp": 117,
+      "fn": 909,
+      "tn": 39718
+    },
+    "per_anomaly_type_metrics": {
+      "cpu_saturation": {
+        "precision": 0.2885,
+        "recall": 0.9499,
+        "f1_score": 0.4426,
+        "false_positive_rate": 0.028,
+        "tp": 474,
+        "fp": 1169,
+        "total_instances": 499
+      },
+      "queue_explosion": {
+        "precision": 0.1808,
+        "recall": 0.9429,
+        "f1_score": 0.3034,
+        "false_positive_rate": 0.0321,
+        "tp": 297,
+        "fp": 1346,
+        "total_instances": 315
+      },
+      "latency_spike": {
+        "precision": 0.0517,
+        "recall": 0.1227,
+        "f1_score": 0.0728,
+        "false_positive_rate": 0.0375,
+        "tp": 85,
+        "fp": 1558,
+        "total_instances": 693
+      },
+      "memory_leak": {
+        "precision": 0.4078,
+        "recall": 0.722,
+        "f1_score": 0.5212,
+        "false_positive_rate": 0.0235,
+        "tp": 670,
+        "fp": 973,
+        "total_instances": 928
+      }
+    }
+  },
+  "out_of_time_validation_evaluation": {
+    "overall_metrics": {
+      "precision": 0.8663,
+      "recall": 0.6755,
+      "f1_score": 0.7591,
+      "false_positive_rate": 0.0036,
+      "tp": 920,
+      "fp": 142,
+      "fn": 442,
+      "tn": 38779
+    },
+    "per_anomaly_type_metrics": {
+      "cpu_saturation": {
+        "precision": 0.1281,
+        "recall": 0.9189,
+        "f1_score": 0.2248,
+        "false_positive_rate": 0.0231,
+        "tp": 136,
+        "fp": 926,
+        "total_instances": 148
+      },
+      "queue_explosion": {
+        "precision": 0.1761,
+        "recall": 0.9397,
+        "f1_score": 0.2966,
+        "false_positive_rate": 0.0218,
+        "tp": 187,
+        "fp": 875,
+        "total_instances": 199
+      },
+      "latency_spike": {
+        "precision": 0.0829,
+        "recall": 0.3024,
+        "f1_score": 0.1301,
+        "false_positive_rate": 0.0244,
+        "tp": 88,
+        "fp": 974,
+        "total_instances": 291
+      },
+      "memory_leak": {
+        "precision": 0.4793,
+        "recall": 0.703,
+        "f1_score": 0.57,
+        "false_positive_rate": 0.014,
+        "tp": 509,
+        "fp": 553,
+        "total_instances": 724
+      }
+    }
+  }
+}

@@ -1,0 +1,2041 @@
+[
+  {
+    "episode_id": "353cc469-cef5-4539-9733-f1d3fcbc62c5",
+    "business_id": "11111111-1111-1111-1111-111111111111",
+    "business_name": "Apex Retail Global",
+    "type": "queue_explosion",
+    "metric": "queue_depth",
+    "severity": "critical",
+    "start_time": "2026-09-08T00:22:13+00:00",
+    "end_time": "2026-09-08T00:42:13+00:00",
+    "duration_minutes": 20,
+    "description": "Upstream service degradation: ingress queue backlogged to 205 items with elevated 504 gateway timeouts",
+    "parameters": {
+      "peak_queue_depth": 205
+    }
+  },
+  {
+    "episode_id": "1e5fcfab-1f6c-443c-89fd-2ae584fa9013",
+    "business_id": "11111111-1111-1111-1111-111111111111",
+    "business_name": "Apex Retail Global",
+    "type": "queue_explosion",
+    "metric": "queue_depth",
+    "severity": "high",
+    "start_time": "2026-09-10T15:44:13+00:00",
+    "end_time": "2026-09-10T16:04:13+00:00",
+    "duration_minutes": 20,
+    "description": "Upstream service degradation: ingress queue backlogged to 101 items with elevated 504 gateway timeouts",
+    "parameters": {
+      "peak_queue_depth": 101
+    }
+  },
+  {
+    "episode_id": "7c4b25af-0e2d-4685-92f9-d455a65b185f",
+    "business_id": "11111111-1111-1111-1111-111111111111",
+    "business_name": "Apex Retail Global",
+    "type": "memory_leak",
+    "metric": "memory_usage",
+    "severity": "high",
+    "start_time": "2026-09-10T17:39:13+00:00",
+    "end_time": "2026-09-10T19:39:13+00:00",
+    "duration_minutes": 120,
+    "description": "Unbounded in-memory session cache leak gradually consuming 94.2% RAM over 120 minutes",
+    "parameters": {
+      "peak_memory_pct": 94.2
+    }
+  },
+  {
+    "episode_id": "77ae9d53-7e99-4dfa-9ac2-209f804aa76b",
+    "business_id": "11111111-1111-1111-1111-111111111111",
+    "business_name": "Apex Retail Global",
+    "type": "memory_leak",
+    "metric": "memory_usage",
+    "severity": "high",
+    "start_time": "2026-09-10T23:10:13+00:00",
+    "end_time": "2026-09-11T01:10:13+00:00",
+    "duration_minutes": 120,
+    "description": "Unbounded in-memory session cache leak gradually consuming 98.4% RAM over 120 minutes",
+    "parameters": {
+      "peak_memory_pct": 98.4
+    }
+  },
+  {
+    "episode_id": "d4dadd5f-75da-438e-8ce3-7b5fe7bfd285",
+    "business_id": "11111111-1111-1111-1111-111111111111",
+    "business_name": "Apex Retail Global",
+    "type": "queue_explosion",
+    "metric": "queue_depth",
+    "severity": "high",
+    "start_time": "2026-09-11T02:03:13+00:00",
+    "end_time": "2026-09-11T02:33:13+00:00",
+    "duration_minutes": 30,
+    "description": "Upstream service degradation: ingress queue backlogged to 87 items with elevated 504 gateway timeouts",
+    "parameters": {
+      "peak_queue_depth": 87
+    }
+  },
+  {
+    "episode_id": "50cb0cf9-b782-4768-a3ee-22ed34ee7591",
+    "business_id": "11111111-1111-1111-1111-111111111111",
+    "business_name": "Apex Retail Global",
+    "type": "latency_spike",
+    "metric": "response_time",
+    "severity": "critical",
+    "start_time": "2026-09-11T21:45:13+00:00",
+    "end_time": "2026-09-11T22:05:13+00:00",
+    "duration_minutes": 20,
+    "description": "Database connection pool saturation causing 6.53x response latency spike on checkout/search endpoints",
+    "parameters": {
+      "multiplier": 6.53,
+      "target_endpoints": [
+        "/api/v1/checkout",
+        "/api/v1/search"
+      ]
+    }
+  },
+  {
+    "episode_id": "24cf2c98-e155-460c-acfd-cbdff1e21fbd",
+    "business_id": "11111111-1111-1111-1111-111111111111",
+    "business_name": "Apex Retail Global",
+    "type": "cpu_saturation",
+    "metric": "cpu_usage",
+    "severity": "critical",
+    "start_time": "2026-09-11T23:30:13+00:00",
+    "end_time": "2026-09-12T00:15:13+00:00",
+    "duration_minutes": 45,
+    "description": "Worker thread deadlock resulting in sustained 98.4% CPU saturation and thread queuing",
+    "parameters": {
+      "sustained_cpu_pct": 98.4
+    }
+  },
+  {
+    "episode_id": "13bc30af-800d-4f7a-a449-84693ec22678",
+    "business_id": "11111111-1111-1111-1111-111111111111",
+    "business_name": "Apex Retail Global",
+    "type": "latency_spike",
+    "metric": "response_time",
+    "severity": "critical",
+    "start_time": "2026-09-12T01:26:13+00:00",
+    "end_time": "2026-09-12T01:56:13+00:00",
+    "duration_minutes": 30,
+    "description": "Database connection pool saturation causing 6.93x response latency spike on checkout/search endpoints",
+    "parameters": {
+      "multiplier": 6.93,
+      "target_endpoints": [
+        "/api/v1/checkout",
+        "/api/v1/search"
+      ]
+    }
+  },
+  {
+    "episode_id": "8cdd7b4a-b1ad-4d73-8888-9762954dc821",
+    "business_id": "11111111-1111-1111-1111-111111111111",
+    "business_name": "Apex Retail Global",
+    "type": "cpu_saturation",
+    "metric": "cpu_usage",
+    "severity": "critical",
+    "start_time": "2026-09-12T05:08:13+00:00",
+    "end_time": "2026-09-12T05:53:13+00:00",
+    "duration_minutes": 45,
+    "description": "Worker thread deadlock resulting in sustained 95.4% CPU saturation and thread queuing",
+    "parameters": {
+      "sustained_cpu_pct": 95.4
+    }
+  },
+  {
+    "episode_id": "2050ce49-6327-42e6-8b24-232366c7cc82",
+    "business_id": "11111111-1111-1111-1111-111111111111",
+    "business_name": "Apex Retail Global",
+    "type": "cpu_saturation",
+    "metric": "cpu_usage",
+    "severity": "critical",
+    "start_time": "2026-09-12T08:38:13+00:00",
+    "end_time": "2026-09-12T08:58:13+00:00",
+    "duration_minutes": 20,
+    "description": "Worker thread deadlock resulting in sustained 94.9% CPU saturation and thread queuing",
+    "parameters": {
+      "sustained_cpu_pct": 94.9
+    }
+  },
+  {
+    "episode_id": "35b285af-5745-49ee-b4ab-227ce21b5f8a",
+    "business_id": "11111111-1111-1111-1111-111111111111",
+    "business_name": "Apex Retail Global",
+    "type": "queue_explosion",
+    "metric": "queue_depth",
+    "severity": "critical",
+    "start_time": "2026-09-12T14:53:13+00:00",
+    "end_time": "2026-09-12T15:23:13+00:00",
+    "duration_minutes": 30,
+    "description": "Upstream service degradation: ingress queue backlogged to 176 items with elevated 504 gateway timeouts",
+    "parameters": {
+      "peak_queue_depth": 176
+    }
+  },
+  {
+    "episode_id": "8b6516e4-4984-4227-a639-6657fb8b2343",
+    "business_id": "11111111-1111-1111-1111-111111111111",
+    "business_name": "Apex Retail Global",
+    "type": "latency_spike",
+    "metric": "response_time",
+    "severity": "critical",
+    "start_time": "2026-09-13T16:08:13+00:00",
+    "end_time": "2026-09-13T16:33:13+00:00",
+    "duration_minutes": 25,
+    "description": "Database connection pool saturation causing 6.81x response latency spike on checkout/search endpoints",
+    "parameters": {
+      "multiplier": 6.81,
+      "target_endpoints": [
+        "/api/v1/checkout",
+        "/api/v1/search"
+      ]
+    }
+  },
+  {
+    "episode_id": "a28c453b-c984-42c5-9e0d-cc7008b64d08",
+    "business_id": "22222222-2222-2222-2222-222222222222",
+    "business_name": "Nexus Cloud SaaS",
+    "type": "queue_explosion",
+    "metric": "queue_depth",
+    "severity": "critical",
+    "start_time": "2026-09-08T22:12:13+00:00",
+    "end_time": "2026-09-08T22:42:13+00:00",
+    "duration_minutes": 30,
+    "description": "Upstream service degradation: ingress queue backlogged to 182 items with elevated 504 gateway timeouts",
+    "parameters": {
+      "peak_queue_depth": 182
+    }
+  },
+  {
+    "episode_id": "ba95ded6-e787-40d4-9852-a57074a1931f",
+    "business_id": "22222222-2222-2222-2222-222222222222",
+    "business_name": "Nexus Cloud SaaS",
+    "type": "memory_leak",
+    "metric": "memory_usage",
+    "severity": "high",
+    "start_time": "2026-09-09T04:24:13+00:00",
+    "end_time": "2026-09-09T06:24:13+00:00",
+    "duration_minutes": 120,
+    "description": "Unbounded in-memory session cache leak gradually consuming 94.7% RAM over 120 minutes",
+    "parameters": {
+      "peak_memory_pct": 94.7
+    }
+  },
+  {
+    "episode_id": "2bcf56c5-de51-4b2f-bc52-f5480f102093",
+    "business_id": "22222222-2222-2222-2222-222222222222",
+    "business_name": "Nexus Cloud SaaS",
+    "type": "memory_leak",
+    "metric": "memory_usage",
+    "severity": "high",
+    "start_time": "2026-09-10T00:52:13+00:00",
+    "end_time": "2026-09-10T03:52:13+00:00",
+    "duration_minutes": 180,
+    "description": "Unbounded in-memory session cache leak gradually consuming 95.6% RAM over 180 minutes",
+    "parameters": {
+      "peak_memory_pct": 95.6
+    }
+  },
+  {
+    "episode_id": "8e9e43e3-d01b-4431-b8b9-6ed1f7187cbe",
+    "business_id": "22222222-2222-2222-2222-222222222222",
+    "business_name": "Nexus Cloud SaaS",
+    "type": "latency_spike",
+    "metric": "response_time",
+    "severity": "high",
+    "start_time": "2026-09-10T19:53:13+00:00",
+    "end_time": "2026-09-10T20:18:13+00:00",
+    "duration_minutes": 25,
+    "description": "Database connection pool saturation causing 4.41x response latency spike on checkout/search endpoints",
+    "parameters": {
+      "multiplier": 4.41,
+      "target_endpoints": [
+        "/api/v1/checkout",
+        "/api/v1/search"
+      ]
+    }
+  },
+  {
+    "episode_id": "108ea7c5-f99e-4a66-af46-cc6e17ed0ece",
+    "business_id": "22222222-2222-2222-2222-222222222222",
+    "business_name": "Nexus Cloud SaaS",
+    "type": "latency_spike",
+    "metric": "response_time",
+    "severity": "high",
+    "start_time": "2026-09-11T21:20:13+00:00",
+    "end_time": "2026-09-11T21:50:13+00:00",
+    "duration_minutes": 30,
+    "description": "Database connection pool saturation causing 4.75x response latency spike on checkout/search endpoints",
+    "parameters": {
+      "multiplier": 4.75,
+      "target_endpoints": [
+        "/api/v1/checkout",
+        "/api/v1/search"
+      ]
+    }
+  },
+  {
+    "episode_id": "f34fce2a-33c5-4339-ba89-8924937b1f8f",
+    "business_id": "22222222-2222-2222-2222-222222222222",
+    "business_name": "Nexus Cloud SaaS",
+    "type": "queue_explosion",
+    "metric": "queue_depth",
+    "severity": "critical",
+    "start_time": "2026-09-12T16:19:13+00:00",
+    "end_time": "2026-09-12T16:34:13+00:00",
+    "duration_minutes": 15,
+    "description": "Upstream service degradation: ingress queue backlogged to 165 items with elevated 504 gateway timeouts",
+    "parameters": {
+      "peak_queue_depth": 165
+    }
+  },
+  {
+    "episode_id": "f35ec86c-7d98-4f06-8803-8719d0ab98c7",
+    "business_id": "22222222-2222-2222-2222-222222222222",
+    "business_name": "Nexus Cloud SaaS",
+    "type": "latency_spike",
+    "metric": "response_time",
+    "severity": "critical",
+    "start_time": "2026-09-12T23:21:13+00:00",
+    "end_time": "2026-09-12T23:51:13+00:00",
+    "duration_minutes": 30,
+    "description": "Database connection pool saturation causing 6.16x response latency spike on checkout/search endpoints",
+    "parameters": {
+      "multiplier": 6.16,
+      "target_endpoints": [
+        "/api/v1/checkout",
+        "/api/v1/search"
+      ]
+    }
+  },
+  {
+    "episode_id": "4aa4227d-4e6e-4f9a-b053-e16c296091be",
+    "business_id": "22222222-2222-2222-2222-222222222222",
+    "business_name": "Nexus Cloud SaaS",
+    "type": "latency_spike",
+    "metric": "response_time",
+    "severity": "high",
+    "start_time": "2026-09-13T00:56:13+00:00",
+    "end_time": "2026-09-13T01:16:13+00:00",
+    "duration_minutes": 20,
+    "description": "Database connection pool saturation causing 4.02x response latency spike on checkout/search endpoints",
+    "parameters": {
+      "multiplier": 4.02,
+      "target_endpoints": [
+        "/api/v1/checkout",
+        "/api/v1/search"
+      ]
+    }
+  },
+  {
+    "episode_id": "cc4c9cb8-ea06-4c2a-bc7a-bcedd88837a7",
+    "business_id": "22222222-2222-2222-2222-222222222222",
+    "business_name": "Nexus Cloud SaaS",
+    "type": "queue_explosion",
+    "metric": "queue_depth",
+    "severity": "critical",
+    "start_time": "2026-09-13T06:51:13+00:00",
+    "end_time": "2026-09-13T07:21:13+00:00",
+    "duration_minutes": 30,
+    "description": "Upstream service degradation: ingress queue backlogged to 130 items with elevated 504 gateway timeouts",
+    "parameters": {
+      "peak_queue_depth": 130
+    }
+  },
+  {
+    "episode_id": "06b481b3-014a-4e44-9cf2-5e36951a1d6e",
+    "business_id": "22222222-2222-2222-2222-222222222222",
+    "business_name": "Nexus Cloud SaaS",
+    "type": "queue_explosion",
+    "metric": "queue_depth",
+    "severity": "critical",
+    "start_time": "2026-09-14T00:44:13+00:00",
+    "end_time": "2026-09-14T01:14:13+00:00",
+    "duration_minutes": 30,
+    "description": "Upstream service degradation: ingress queue backlogged to 131 items with elevated 504 gateway timeouts",
+    "parameters": {
+      "peak_queue_depth": 131
+    }
+  },
+  {
+    "episode_id": "06993185-981c-483e-8648-92e3ed9c95ab",
+    "business_id": "33333333-3333-3333-3333-333333333333",
+    "business_name": "Vortex Media Streaming",
+    "type": "cpu_saturation",
+    "metric": "cpu_usage",
+    "severity": "critical",
+    "start_time": "2026-09-09T10:54:13+00:00",
+    "end_time": "2026-09-09T11:39:13+00:00",
+    "duration_minutes": 45,
+    "description": "Worker thread deadlock resulting in sustained 96.7% CPU saturation and thread queuing",
+    "parameters": {
+      "sustained_cpu_pct": 96.7
+    }
+  },
+  {
+    "episode_id": "692b87ac-4f78-420d-9f36-5a4c5cc70b1f",
+    "business_id": "33333333-3333-3333-3333-333333333333",
+    "business_name": "Vortex Media Streaming",
+    "type": "cpu_saturation",
+    "metric": "cpu_usage",
+    "severity": "critical",
+    "start_time": "2026-09-09T13:37:13+00:00",
+    "end_time": "2026-09-09T14:22:13+00:00",
+    "duration_minutes": 45,
+    "description": "Worker thread deadlock resulting in sustained 97.6% CPU saturation and thread queuing",
+    "parameters": {
+      "sustained_cpu_pct": 97.6
+    }
+  },
+  {
+    "episode_id": "142be71a-eded-46f1-a1ac-6a7d36a33c0c",
+    "business_id": "33333333-3333-3333-3333-333333333333",
+    "business_name": "Vortex Media Streaming",
+    "type": "queue_explosion",
+    "metric": "queue_depth",
+    "severity": "critical",
+    "start_time": "2026-09-09T15:25:13+00:00",
+    "end_time": "2026-09-09T15:55:13+00:00",
+    "duration_minutes": 30,
+    "description": "Upstream service degradation: ingress queue backlogged to 154 items with elevated 504 gateway timeouts",
+    "parameters": {
+      "peak_queue_depth": 154
+    }
+  },
+  {
+    "episode_id": "354cd7f4-2991-4529-9fa8-0f228be5e2af",
+    "business_id": "33333333-3333-3333-3333-333333333333",
+    "business_name": "Vortex Media Streaming",
+    "type": "memory_leak",
+    "metric": "memory_usage",
+    "severity": "high",
+    "start_time": "2026-09-10T07:45:13+00:00",
+    "end_time": "2026-09-10T09:45:13+00:00",
+    "duration_minutes": 120,
+    "description": "Unbounded in-memory session cache leak gradually consuming 97.9% RAM over 120 minutes",
+    "parameters": {
+      "peak_memory_pct": 97.9
+    }
+  },
+  {
+    "episode_id": "c4de9a18-ccb3-4326-a6c1-98eb7f2d259f",
+    "business_id": "33333333-3333-3333-3333-333333333333",
+    "business_name": "Vortex Media Streaming",
+    "type": "latency_spike",
+    "metric": "response_time",
+    "severity": "critical",
+    "start_time": "2026-09-10T13:58:13+00:00",
+    "end_time": "2026-09-10T14:13:13+00:00",
+    "duration_minutes": 15,
+    "description": "Database connection pool saturation causing 5.38x response latency spike on checkout/search endpoints",
+    "parameters": {
+      "multiplier": 5.38,
+      "target_endpoints": [
+        "/api/v1/checkout",
+        "/api/v1/search"
+      ]
+    }
+  },
+  {
+    "episode_id": "af9f3560-8d64-4036-83c5-a811cc154f6a",
+    "business_id": "33333333-3333-3333-3333-333333333333",
+    "business_name": "Vortex Media Streaming",
+    "type": "latency_spike",
+    "metric": "response_time",
+    "severity": "critical",
+    "start_time": "2026-09-11T00:44:13+00:00",
+    "end_time": "2026-09-11T01:09:13+00:00",
+    "duration_minutes": 25,
+    "description": "Database connection pool saturation causing 6.16x response latency spike on checkout/search endpoints",
+    "parameters": {
+      "multiplier": 6.16,
+      "target_endpoints": [
+        "/api/v1/checkout",
+        "/api/v1/search"
+      ]
+    }
+  },
+  {
+    "episode_id": "99e64532-756f-4e89-8a73-29bab0e1a71a",
+    "business_id": "33333333-3333-3333-3333-333333333333",
+    "business_name": "Vortex Media Streaming",
+    "type": "queue_explosion",
+    "metric": "queue_depth",
+    "severity": "high",
+    "start_time": "2026-09-11T08:49:13+00:00",
+    "end_time": "2026-09-11T09:09:13+00:00",
+    "duration_minutes": 20,
+    "description": "Upstream service degradation: ingress queue backlogged to 82 items with elevated 504 gateway timeouts",
+    "parameters": {
+      "peak_queue_depth": 82
+    }
+  },
+  {
+    "episode_id": "56b12cdb-e14b-4006-802e-2a2e8722160a",
+    "business_id": "33333333-3333-3333-3333-333333333333",
+    "business_name": "Vortex Media Streaming",
+    "type": "memory_leak",
+    "metric": "memory_usage",
+    "severity": "high",
+    "start_time": "2026-09-11T09:49:13+00:00",
+    "end_time": "2026-09-11T12:49:13+00:00",
+    "duration_minutes": 180,
+    "description": "Unbounded in-memory session cache leak gradually consuming 94.7% RAM over 180 minutes",
+    "parameters": {
+      "peak_memory_pct": 94.7
+    }
+  },
+  {
+    "episode_id": "93c1cb2a-2549-472d-8a1d-6c007288e835",
+    "business_id": "33333333-3333-3333-3333-333333333333",
+    "business_name": "Vortex Media Streaming",
+    "type": "cpu_saturation",
+    "metric": "cpu_usage",
+    "severity": "critical",
+    "start_time": "2026-09-13T10:08:13+00:00",
+    "end_time": "2026-09-13T10:53:13+00:00",
+    "duration_minutes": 45,
+    "description": "Worker thread deadlock resulting in sustained 95.6% CPU saturation and thread queuing",
+    "parameters": {
+      "sustained_cpu_pct": 95.6
+    }
+  },
+  {
+    "episode_id": "555e127f-b9a0-4ed9-ad39-0ef89b64d1b4",
+    "business_id": "44444444-4444-4444-4444-444444444444",
+    "business_name": "CyberFin Banking Core",
+    "type": "cpu_saturation",
+    "metric": "cpu_usage",
+    "severity": "critical",
+    "start_time": "2026-09-09T20:29:13+00:00",
+    "end_time": "2026-09-09T20:49:13+00:00",
+    "duration_minutes": 20,
+    "description": "Worker thread deadlock resulting in sustained 94.9% CPU saturation and thread queuing",
+    "parameters": {
+      "sustained_cpu_pct": 94.9
+    }
+  },
+  {
+    "episode_id": "1923ea35-1e29-4a5b-bb61-f486631f2758",
+    "business_id": "44444444-4444-4444-4444-444444444444",
+    "business_name": "CyberFin Banking Core",
+    "type": "memory_leak",
+    "metric": "memory_usage",
+    "severity": "high",
+    "start_time": "2026-09-09T21:28:13+00:00",
+    "end_time": "2026-09-09T22:58:13+00:00",
+    "duration_minutes": 90,
+    "description": "Unbounded in-memory session cache leak gradually consuming 98.6% RAM over 90 minutes",
+    "parameters": {
+      "peak_memory_pct": 98.6
+    }
+  },
+  {
+    "episode_id": "eb8930ac-c8da-466b-90de-f0fee28262e6",
+    "business_id": "44444444-4444-4444-4444-444444444444",
+    "business_name": "CyberFin Banking Core",
+    "type": "queue_explosion",
+    "metric": "queue_depth",
+    "severity": "high",
+    "start_time": "2026-09-10T04:16:13+00:00",
+    "end_time": "2026-09-10T04:31:13+00:00",
+    "duration_minutes": 15,
+    "description": "Upstream service degradation: ingress queue backlogged to 103 items with elevated 504 gateway timeouts",
+    "parameters": {
+      "peak_queue_depth": 103
+    }
+  },
+  {
+    "episode_id": "c8cc871b-56ca-4eb6-a1d1-de87c450a679",
+    "business_id": "44444444-4444-4444-4444-444444444444",
+    "business_name": "CyberFin Banking Core",
+    "type": "memory_leak",
+    "metric": "memory_usage",
+    "severity": "high",
+    "start_time": "2026-09-10T22:55:13+00:00",
+    "end_time": "2026-09-11T00:25:13+00:00",
+    "duration_minutes": 90,
+    "description": "Unbounded in-memory session cache leak gradually consuming 96.1% RAM over 90 minutes",
+    "parameters": {
+      "peak_memory_pct": 96.1
+    }
+  },
+  {
+    "episode_id": "7351e778-14ef-4b3b-a3a7-52a724890e10",
+    "business_id": "44444444-4444-4444-4444-444444444444",
+    "business_name": "CyberFin Banking Core",
+    "type": "latency_spike",
+    "metric": "response_time",
+    "severity": "high",
+    "start_time": "2026-09-11T12:58:13+00:00",
+    "end_time": "2026-09-11T13:28:13+00:00",
+    "duration_minutes": 30,
+    "description": "Database connection pool saturation causing 4.21x response latency spike on checkout/search endpoints",
+    "parameters": {
+      "multiplier": 4.21,
+      "target_endpoints": [
+        "/api/v1/checkout",
+        "/api/v1/search"
+      ]
+    }
+  },
+  {
+    "episode_id": "ac12a556-89ff-489a-b047-a3bffa10bf06",
+    "business_id": "44444444-4444-4444-4444-444444444444",
+    "business_name": "CyberFin Banking Core",
+    "type": "cpu_saturation",
+    "metric": "cpu_usage",
+    "severity": "critical",
+    "start_time": "2026-09-11T21:16:13+00:00",
+    "end_time": "2026-09-11T22:01:13+00:00",
+    "duration_minutes": 45,
+    "description": "Worker thread deadlock resulting in sustained 96.2% CPU saturation and thread queuing",
+    "parameters": {
+      "sustained_cpu_pct": 96.2
+    }
+  },
+  {
+    "episode_id": "03505141-ebb5-41f9-89af-319422af28bd",
+    "business_id": "44444444-4444-4444-4444-444444444444",
+    "business_name": "CyberFin Banking Core",
+    "type": "latency_spike",
+    "metric": "response_time",
+    "severity": "high",
+    "start_time": "2026-09-12T09:45:13+00:00",
+    "end_time": "2026-09-12T10:05:13+00:00",
+    "duration_minutes": 20,
+    "description": "Database connection pool saturation causing 4.72x response latency spike on checkout/search endpoints",
+    "parameters": {
+      "multiplier": 4.72,
+      "target_endpoints": [
+        "/api/v1/checkout",
+        "/api/v1/search"
+      ]
+    }
+  },
+  {
+    "episode_id": "ed5b9634-7f90-4168-a2a6-68334b05dac7",
+    "business_id": "44444444-4444-4444-4444-444444444444",
+    "business_name": "CyberFin Banking Core",
+    "type": "latency_spike",
+    "metric": "response_time",
+    "severity": "critical",
+    "start_time": "2026-09-12T12:40:13+00:00",
+    "end_time": "2026-09-12T13:10:13+00:00",
+    "duration_minutes": 30,
+    "description": "Database connection pool saturation causing 5.35x response latency spike on checkout/search endpoints",
+    "parameters": {
+      "multiplier": 5.35,
+      "target_endpoints": [
+        "/api/v1/checkout",
+        "/api/v1/search"
+      ]
+    }
+  },
+  {
+    "episode_id": "6a08ed8b-ac2f-477a-9616-65612a50946f",
+    "business_id": "44444444-4444-4444-4444-444444444444",
+    "business_name": "CyberFin Banking Core",
+    "type": "memory_leak",
+    "metric": "memory_usage",
+    "severity": "high",
+    "start_time": "2026-09-12T13:58:13+00:00",
+    "end_time": "2026-09-12T15:58:13+00:00",
+    "duration_minutes": 120,
+    "description": "Unbounded in-memory session cache leak gradually consuming 94.5% RAM over 120 minutes",
+    "parameters": {
+      "peak_memory_pct": 94.5
+    }
+  },
+  {
+    "episode_id": "528620f4-a87f-401e-a304-2d1a122309be",
+    "business_id": "44444444-4444-4444-4444-444444444444",
+    "business_name": "CyberFin Banking Core",
+    "type": "cpu_saturation",
+    "metric": "cpu_usage",
+    "severity": "critical",
+    "start_time": "2026-09-12T19:43:13+00:00",
+    "end_time": "2026-09-12T20:03:13+00:00",
+    "duration_minutes": 20,
+    "description": "Worker thread deadlock resulting in sustained 98.2% CPU saturation and thread queuing",
+    "parameters": {
+      "sustained_cpu_pct": 98.2
+    }
+  },
+  {
+    "episode_id": "29f8857b-7957-4dd3-b9b7-6f33162540d4",
+    "business_id": "44444444-4444-4444-4444-444444444444",
+    "business_name": "CyberFin Banking Core",
+    "type": "queue_explosion",
+    "metric": "queue_depth",
+    "severity": "critical",
+    "start_time": "2026-09-13T18:23:13+00:00",
+    "end_time": "2026-09-13T18:38:13+00:00",
+    "duration_minutes": 15,
+    "description": "Upstream service degradation: ingress queue backlogged to 140 items with elevated 504 gateway timeouts",
+    "parameters": {
+      "peak_queue_depth": 140
+    }
+  },
+  {
+    "episode_id": "b0bc703c-adaa-4f7a-ad69-83331b727f78",
+    "business_id": "44444444-4444-4444-4444-444444444444",
+    "business_name": "CyberFin Banking Core",
+    "type": "latency_spike",
+    "metric": "response_time",
+    "severity": "critical",
+    "start_time": "2026-09-13T19:38:13+00:00",
+    "end_time": "2026-09-13T19:58:13+00:00",
+    "duration_minutes": 20,
+    "description": "Database connection pool saturation causing 6.3x response latency spike on checkout/search endpoints",
+    "parameters": {
+      "multiplier": 6.3,
+      "target_endpoints": [
+        "/api/v1/checkout",
+        "/api/v1/search"
+      ]
+    }
+  },
+  {
+    "episode_id": "af3756d9-0ab8-42d8-b424-053169f0f2a2",
+    "business_id": "55555555-5555-5555-5555-555555555555",
+    "business_name": "HealthPulse Telehealth",
+    "type": "cpu_saturation",
+    "metric": "cpu_usage",
+    "severity": "critical",
+    "start_time": "2026-09-07T16:20:13+00:00",
+    "end_time": "2026-09-07T17:05:13+00:00",
+    "duration_minutes": 45,
+    "description": "Worker thread deadlock resulting in sustained 97.9% CPU saturation and thread queuing",
+    "parameters": {
+      "sustained_cpu_pct": 97.9
+    }
+  },
+  {
+    "episode_id": "6fd0bd1f-96a6-46db-9371-9d6e32f3e1c9",
+    "business_id": "55555555-5555-5555-5555-555555555555",
+    "business_name": "HealthPulse Telehealth",
+    "type": "latency_spike",
+    "metric": "response_time",
+    "severity": "high",
+    "start_time": "2026-09-08T04:47:13+00:00",
+    "end_time": "2026-09-08T05:12:13+00:00",
+    "duration_minutes": 25,
+    "description": "Database connection pool saturation causing 3.84x response latency spike on checkout/search endpoints",
+    "parameters": {
+      "multiplier": 3.84,
+      "target_endpoints": [
+        "/api/v1/checkout",
+        "/api/v1/search"
+      ]
+    }
+  },
+  {
+    "episode_id": "047e99f7-9da4-45b0-a90e-b2e5fb21e832",
+    "business_id": "55555555-5555-5555-5555-555555555555",
+    "business_name": "HealthPulse Telehealth",
+    "type": "queue_explosion",
+    "metric": "queue_depth",
+    "severity": "high",
+    "start_time": "2026-09-09T13:56:13+00:00",
+    "end_time": "2026-09-09T14:16:13+00:00",
+    "duration_minutes": 20,
+    "description": "Upstream service degradation: ingress queue backlogged to 73 items with elevated 504 gateway timeouts",
+    "parameters": {
+      "peak_queue_depth": 73
+    }
+  },
+  {
+    "episode_id": "b326b740-7a1c-48f9-8a83-5c917617c705",
+    "business_id": "55555555-5555-5555-5555-555555555555",
+    "business_name": "HealthPulse Telehealth",
+    "type": "queue_explosion",
+    "metric": "queue_depth",
+    "severity": "critical",
+    "start_time": "2026-09-10T09:55:13+00:00",
+    "end_time": "2026-09-10T10:25:13+00:00",
+    "duration_minutes": 30,
+    "description": "Upstream service degradation: ingress queue backlogged to 180 items with elevated 504 gateway timeouts",
+    "parameters": {
+      "peak_queue_depth": 180
+    }
+  },
+  {
+    "episode_id": "78d562aa-881b-4d05-9377-a41249756a7c",
+    "business_id": "55555555-5555-5555-5555-555555555555",
+    "business_name": "HealthPulse Telehealth",
+    "type": "memory_leak",
+    "metric": "memory_usage",
+    "severity": "high",
+    "start_time": "2026-09-10T11:32:13+00:00",
+    "end_time": "2026-09-10T14:32:13+00:00",
+    "duration_minutes": 180,
+    "description": "Unbounded in-memory session cache leak gradually consuming 97.0% RAM over 180 minutes",
+    "parameters": {
+      "peak_memory_pct": 97.0
+    }
+  },
+  {
+    "episode_id": "e13d5ea1-8012-43a0-9dc5-a8c66f7c58b6",
+    "business_id": "55555555-5555-5555-5555-555555555555",
+    "business_name": "HealthPulse Telehealth",
+    "type": "latency_spike",
+    "metric": "response_time",
+    "severity": "high",
+    "start_time": "2026-09-10T22:59:13+00:00",
+    "end_time": "2026-09-10T23:14:13+00:00",
+    "duration_minutes": 15,
+    "description": "Database connection pool saturation causing 4.82x response latency spike on checkout/search endpoints",
+    "parameters": {
+      "multiplier": 4.82,
+      "target_endpoints": [
+        "/api/v1/checkout",
+        "/api/v1/search"
+      ]
+    }
+  },
+  {
+    "episode_id": "47e9869c-dd58-4a49-adc7-c8d947307b0d",
+    "business_id": "55555555-5555-5555-5555-555555555555",
+    "business_name": "HealthPulse Telehealth",
+    "type": "cpu_saturation",
+    "metric": "cpu_usage",
+    "severity": "critical",
+    "start_time": "2026-09-11T11:49:13+00:00",
+    "end_time": "2026-09-11T12:09:13+00:00",
+    "duration_minutes": 20,
+    "description": "Worker thread deadlock resulting in sustained 96.7% CPU saturation and thread queuing",
+    "parameters": {
+      "sustained_cpu_pct": 96.7
+    }
+  },
+  {
+    "episode_id": "526d2d8a-cc0a-4fe9-9726-0efccdb111e7",
+    "business_id": "55555555-5555-5555-5555-555555555555",
+    "business_name": "HealthPulse Telehealth",
+    "type": "latency_spike",
+    "metric": "response_time",
+    "severity": "high",
+    "start_time": "2026-09-11T13:16:13+00:00",
+    "end_time": "2026-09-11T13:46:13+00:00",
+    "duration_minutes": 30,
+    "description": "Database connection pool saturation causing 4.89x response latency spike on checkout/search endpoints",
+    "parameters": {
+      "multiplier": 4.89,
+      "target_endpoints": [
+        "/api/v1/checkout",
+        "/api/v1/search"
+      ]
+    }
+  },
+  {
+    "episode_id": "0ed49adf-6736-4b35-aab2-fa62dcd4a59d",
+    "business_id": "55555555-5555-5555-5555-555555555555",
+    "business_name": "HealthPulse Telehealth",
+    "type": "cpu_saturation",
+    "metric": "cpu_usage",
+    "severity": "critical",
+    "start_time": "2026-09-12T04:11:13+00:00",
+    "end_time": "2026-09-12T04:41:13+00:00",
+    "duration_minutes": 30,
+    "description": "Worker thread deadlock resulting in sustained 98.9% CPU saturation and thread queuing",
+    "parameters": {
+      "sustained_cpu_pct": 98.9
+    }
+  },
+  {
+    "episode_id": "9d624bf3-b23b-4ead-bdac-b4c55eb5dfbf",
+    "business_id": "55555555-5555-5555-5555-555555555555",
+    "business_name": "HealthPulse Telehealth",
+    "type": "queue_explosion",
+    "metric": "queue_depth",
+    "severity": "high",
+    "start_time": "2026-09-12T05:26:13+00:00",
+    "end_time": "2026-09-12T05:41:13+00:00",
+    "duration_minutes": 15,
+    "description": "Upstream service degradation: ingress queue backlogged to 84 items with elevated 504 gateway timeouts",
+    "parameters": {
+      "peak_queue_depth": 84
+    }
+  },
+  {
+    "episode_id": "699f6372-7649-42ca-8ea7-41eea56a29f1",
+    "business_id": "55555555-5555-5555-5555-555555555555",
+    "business_name": "HealthPulse Telehealth",
+    "type": "cpu_saturation",
+    "metric": "cpu_usage",
+    "severity": "critical",
+    "start_time": "2026-09-12T22:39:13+00:00",
+    "end_time": "2026-09-12T23:09:13+00:00",
+    "duration_minutes": 30,
+    "description": "Worker thread deadlock resulting in sustained 94.9% CPU saturation and thread queuing",
+    "parameters": {
+      "sustained_cpu_pct": 94.9
+    }
+  },
+  {
+    "episode_id": "8c58b6b3-10a3-4a34-8de8-f06c8afe035b",
+    "business_id": "55555555-5555-5555-5555-555555555555",
+    "business_name": "HealthPulse Telehealth",
+    "type": "latency_spike",
+    "metric": "response_time",
+    "severity": "critical",
+    "start_time": "2026-09-13T00:30:13+00:00",
+    "end_time": "2026-09-13T00:55:13+00:00",
+    "duration_minutes": 25,
+    "description": "Database connection pool saturation causing 7.2x response latency spike on checkout/search endpoints",
+    "parameters": {
+      "multiplier": 7.2,
+      "target_endpoints": [
+        "/api/v1/checkout",
+        "/api/v1/search"
+      ]
+    }
+  },
+  {
+    "episode_id": "08a45f9a-592d-47d0-858c-55577446aec8",
+    "business_id": "55555555-5555-5555-5555-555555555555",
+    "business_name": "HealthPulse Telehealth",
+    "type": "memory_leak",
+    "metric": "memory_usage",
+    "severity": "high",
+    "start_time": "2026-09-14T01:32:13+00:00",
+    "end_time": "2026-09-14T03:32:13+00:00",
+    "duration_minutes": 120,
+    "description": "Unbounded in-memory session cache leak gradually consuming 96.5% RAM over 120 minutes",
+    "parameters": {
+      "peak_memory_pct": 96.5
+    }
+  },
+  {
+    "episode_id": "9d3e6155-b8f1-443c-a112-ded70b8dea2a",
+    "business_id": "66666666-6666-6666-6666-666666666666",
+    "business_name": "Logix Logistics Net",
+    "type": "cpu_saturation",
+    "metric": "cpu_usage",
+    "severity": "critical",
+    "start_time": "2026-09-07T14:45:13+00:00",
+    "end_time": "2026-09-07T15:30:13+00:00",
+    "duration_minutes": 45,
+    "description": "Worker thread deadlock resulting in sustained 95.2% CPU saturation and thread queuing",
+    "parameters": {
+      "sustained_cpu_pct": 95.2
+    }
+  },
+  {
+    "episode_id": "29226120-9370-410f-b37d-389994447e17",
+    "business_id": "66666666-6666-6666-6666-666666666666",
+    "business_name": "Logix Logistics Net",
+    "type": "queue_explosion",
+    "metric": "queue_depth",
+    "severity": "critical",
+    "start_time": "2026-09-08T06:58:13+00:00",
+    "end_time": "2026-09-08T07:13:13+00:00",
+    "duration_minutes": 15,
+    "description": "Upstream service degradation: ingress queue backlogged to 156 items with elevated 504 gateway timeouts",
+    "parameters": {
+      "peak_queue_depth": 156
+    }
+  },
+  {
+    "episode_id": "43e0b5ce-896c-4ab4-ac3e-0276b230eba5",
+    "business_id": "66666666-6666-6666-6666-666666666666",
+    "business_name": "Logix Logistics Net",
+    "type": "queue_explosion",
+    "metric": "queue_depth",
+    "severity": "high",
+    "start_time": "2026-09-08T08:47:13+00:00",
+    "end_time": "2026-09-08T09:17:13+00:00",
+    "duration_minutes": 30,
+    "description": "Upstream service degradation: ingress queue backlogged to 109 items with elevated 504 gateway timeouts",
+    "parameters": {
+      "peak_queue_depth": 109
+    }
+  },
+  {
+    "episode_id": "0595a3f6-a1c3-4181-92bd-8b5bd51d46be",
+    "business_id": "66666666-6666-6666-6666-666666666666",
+    "business_name": "Logix Logistics Net",
+    "type": "memory_leak",
+    "metric": "memory_usage",
+    "severity": "high",
+    "start_time": "2026-09-09T02:24:13+00:00",
+    "end_time": "2026-09-09T06:24:13+00:00",
+    "duration_minutes": 240,
+    "description": "Unbounded in-memory session cache leak gradually consuming 94.2% RAM over 240 minutes",
+    "parameters": {
+      "peak_memory_pct": 94.2
+    }
+  },
+  {
+    "episode_id": "36b4d232-38a7-45cb-b21d-7f294568e17b",
+    "business_id": "66666666-6666-6666-6666-666666666666",
+    "business_name": "Logix Logistics Net",
+    "type": "cpu_saturation",
+    "metric": "cpu_usage",
+    "severity": "critical",
+    "start_time": "2026-09-10T13:38:13+00:00",
+    "end_time": "2026-09-10T14:23:13+00:00",
+    "duration_minutes": 45,
+    "description": "Worker thread deadlock resulting in sustained 94.6% CPU saturation and thread queuing",
+    "parameters": {
+      "sustained_cpu_pct": 94.6
+    }
+  },
+  {
+    "episode_id": "7669bb62-eacb-40b3-ae9c-7609202ebbec",
+    "business_id": "66666666-6666-6666-6666-666666666666",
+    "business_name": "Logix Logistics Net",
+    "type": "memory_leak",
+    "metric": "memory_usage",
+    "severity": "high",
+    "start_time": "2026-09-11T07:58:13+00:00",
+    "end_time": "2026-09-11T09:58:13+00:00",
+    "duration_minutes": 120,
+    "description": "Unbounded in-memory session cache leak gradually consuming 94.5% RAM over 120 minutes",
+    "parameters": {
+      "peak_memory_pct": 94.5
+    }
+  },
+  {
+    "episode_id": "ae350362-684f-4249-800f-74b0df37b7f0",
+    "business_id": "66666666-6666-6666-6666-666666666666",
+    "business_name": "Logix Logistics Net",
+    "type": "latency_spike",
+    "metric": "response_time",
+    "severity": "critical",
+    "start_time": "2026-09-12T14:02:13+00:00",
+    "end_time": "2026-09-12T14:27:13+00:00",
+    "duration_minutes": 25,
+    "description": "Database connection pool saturation causing 6.57x response latency spike on checkout/search endpoints",
+    "parameters": {
+      "multiplier": 6.57,
+      "target_endpoints": [
+        "/api/v1/checkout",
+        "/api/v1/search"
+      ]
+    }
+  },
+  {
+    "episode_id": "25f66994-c100-4666-a2c6-b0736d81d65d",
+    "business_id": "77777777-7777-7777-7777-777777777777",
+    "business_name": "Hyperion Gaming Mesh",
+    "type": "queue_explosion",
+    "metric": "queue_depth",
+    "severity": "high",
+    "start_time": "2026-09-07T20:31:13+00:00",
+    "end_time": "2026-09-07T21:01:13+00:00",
+    "duration_minutes": 30,
+    "description": "Upstream service degradation: ingress queue backlogged to 97 items with elevated 504 gateway timeouts",
+    "parameters": {
+      "peak_queue_depth": 97
+    }
+  },
+  {
+    "episode_id": "d5d5835e-f49e-47bb-9aad-8bba48dd8c4e",
+    "business_id": "77777777-7777-7777-7777-777777777777",
+    "business_name": "Hyperion Gaming Mesh",
+    "type": "queue_explosion",
+    "metric": "queue_depth",
+    "severity": "critical",
+    "start_time": "2026-09-08T04:45:13+00:00",
+    "end_time": "2026-09-08T05:15:13+00:00",
+    "duration_minutes": 30,
+    "description": "Upstream service degradation: ingress queue backlogged to 173 items with elevated 504 gateway timeouts",
+    "parameters": {
+      "peak_queue_depth": 173
+    }
+  },
+  {
+    "episode_id": "226286b3-19ea-419e-b8b7-2f6623086bb3",
+    "business_id": "77777777-7777-7777-7777-777777777777",
+    "business_name": "Hyperion Gaming Mesh",
+    "type": "cpu_saturation",
+    "metric": "cpu_usage",
+    "severity": "critical",
+    "start_time": "2026-09-09T07:24:13+00:00",
+    "end_time": "2026-09-09T08:09:13+00:00",
+    "duration_minutes": 45,
+    "description": "Worker thread deadlock resulting in sustained 98.9% CPU saturation and thread queuing",
+    "parameters": {
+      "sustained_cpu_pct": 98.9
+    }
+  },
+  {
+    "episode_id": "2c383b70-4da7-4f6d-9e52-dbf02f5ca6ee",
+    "business_id": "77777777-7777-7777-7777-777777777777",
+    "business_name": "Hyperion Gaming Mesh",
+    "type": "latency_spike",
+    "metric": "response_time",
+    "severity": "high",
+    "start_time": "2026-09-09T20:39:13+00:00",
+    "end_time": "2026-09-09T21:09:13+00:00",
+    "duration_minutes": 30,
+    "description": "Database connection pool saturation causing 4.99x response latency spike on checkout/search endpoints",
+    "parameters": {
+      "multiplier": 4.99,
+      "target_endpoints": [
+        "/api/v1/checkout",
+        "/api/v1/search"
+      ]
+    }
+  },
+  {
+    "episode_id": "7faea063-244c-4644-b950-8eebd79ff9d3",
+    "business_id": "77777777-7777-7777-7777-777777777777",
+    "business_name": "Hyperion Gaming Mesh",
+    "type": "queue_explosion",
+    "metric": "queue_depth",
+    "severity": "critical",
+    "start_time": "2026-09-10T01:58:13+00:00",
+    "end_time": "2026-09-10T02:13:13+00:00",
+    "duration_minutes": 15,
+    "description": "Upstream service degradation: ingress queue backlogged to 153 items with elevated 504 gateway timeouts",
+    "parameters": {
+      "peak_queue_depth": 153
+    }
+  },
+  {
+    "episode_id": "1c164566-d1fa-4faf-8a1c-4a17bca6ec2a",
+    "business_id": "77777777-7777-7777-7777-777777777777",
+    "business_name": "Hyperion Gaming Mesh",
+    "type": "memory_leak",
+    "metric": "memory_usage",
+    "severity": "high",
+    "start_time": "2026-09-10T23:14:13+00:00",
+    "end_time": "2026-09-11T01:14:13+00:00",
+    "duration_minutes": 120,
+    "description": "Unbounded in-memory session cache leak gradually consuming 94.7% RAM over 120 minutes",
+    "parameters": {
+      "peak_memory_pct": 94.7
+    }
+  },
+  {
+    "episode_id": "92ad9e7d-1298-462a-b478-0b0dec717661",
+    "business_id": "77777777-7777-7777-7777-777777777777",
+    "business_name": "Hyperion Gaming Mesh",
+    "type": "memory_leak",
+    "metric": "memory_usage",
+    "severity": "high",
+    "start_time": "2026-09-11T02:28:13+00:00",
+    "end_time": "2026-09-11T03:58:13+00:00",
+    "duration_minutes": 90,
+    "description": "Unbounded in-memory session cache leak gradually consuming 95.5% RAM over 90 minutes",
+    "parameters": {
+      "peak_memory_pct": 95.5
+    }
+  },
+  {
+    "episode_id": "88cc5ce5-81b8-493b-a939-85e2d0c69f5f",
+    "business_id": "77777777-7777-7777-7777-777777777777",
+    "business_name": "Hyperion Gaming Mesh",
+    "type": "latency_spike",
+    "metric": "response_time",
+    "severity": "critical",
+    "start_time": "2026-09-11T05:29:13+00:00",
+    "end_time": "2026-09-11T05:44:13+00:00",
+    "duration_minutes": 15,
+    "description": "Database connection pool saturation causing 5.24x response latency spike on checkout/search endpoints",
+    "parameters": {
+      "multiplier": 5.24,
+      "target_endpoints": [
+        "/api/v1/checkout",
+        "/api/v1/search"
+      ]
+    }
+  },
+  {
+    "episode_id": "96a15519-1087-4ca3-9174-8c4596d12bf5",
+    "business_id": "77777777-7777-7777-7777-777777777777",
+    "business_name": "Hyperion Gaming Mesh",
+    "type": "latency_spike",
+    "metric": "response_time",
+    "severity": "critical",
+    "start_time": "2026-09-11T07:39:13+00:00",
+    "end_time": "2026-09-11T08:04:13+00:00",
+    "duration_minutes": 25,
+    "description": "Database connection pool saturation causing 6.82x response latency spike on checkout/search endpoints",
+    "parameters": {
+      "multiplier": 6.82,
+      "target_endpoints": [
+        "/api/v1/checkout",
+        "/api/v1/search"
+      ]
+    }
+  },
+  {
+    "episode_id": "8a0476d3-89b1-431c-a546-3ddedddee898",
+    "business_id": "77777777-7777-7777-7777-777777777777",
+    "business_name": "Hyperion Gaming Mesh",
+    "type": "latency_spike",
+    "metric": "response_time",
+    "severity": "critical",
+    "start_time": "2026-09-11T22:10:13+00:00",
+    "end_time": "2026-09-11T22:40:13+00:00",
+    "duration_minutes": 30,
+    "description": "Database connection pool saturation causing 5.56x response latency spike on checkout/search endpoints",
+    "parameters": {
+      "multiplier": 5.56,
+      "target_endpoints": [
+        "/api/v1/checkout",
+        "/api/v1/search"
+      ]
+    }
+  },
+  {
+    "episode_id": "0550e70f-00e2-4166-952c-2c8c12044bdd",
+    "business_id": "77777777-7777-7777-7777-777777777777",
+    "business_name": "Hyperion Gaming Mesh",
+    "type": "cpu_saturation",
+    "metric": "cpu_usage",
+    "severity": "critical",
+    "start_time": "2026-09-13T02:52:13+00:00",
+    "end_time": "2026-09-13T03:22:13+00:00",
+    "duration_minutes": 30,
+    "description": "Worker thread deadlock resulting in sustained 96.0% CPU saturation and thread queuing",
+    "parameters": {
+      "sustained_cpu_pct": 96.0
+    }
+  },
+  {
+    "episode_id": "d577bfeb-ff35-457f-ae2d-fd4adbf6662c",
+    "business_id": "77777777-7777-7777-7777-777777777777",
+    "business_name": "Hyperion Gaming Mesh",
+    "type": "latency_spike",
+    "metric": "response_time",
+    "severity": "high",
+    "start_time": "2026-09-13T06:52:13+00:00",
+    "end_time": "2026-09-13T07:07:13+00:00",
+    "duration_minutes": 15,
+    "description": "Database connection pool saturation causing 4.11x response latency spike on checkout/search endpoints",
+    "parameters": {
+      "multiplier": 4.11,
+      "target_endpoints": [
+        "/api/v1/checkout",
+        "/api/v1/search"
+      ]
+    }
+  },
+  {
+    "episode_id": "dacc4617-789b-4b24-acba-08cf005b920b",
+    "business_id": "77777777-7777-7777-7777-777777777777",
+    "business_name": "Hyperion Gaming Mesh",
+    "type": "latency_spike",
+    "metric": "response_time",
+    "severity": "critical",
+    "start_time": "2026-09-13T09:08:13+00:00",
+    "end_time": "2026-09-13T09:33:13+00:00",
+    "duration_minutes": 25,
+    "description": "Database connection pool saturation causing 7.07x response latency spike on checkout/search endpoints",
+    "parameters": {
+      "multiplier": 7.07,
+      "target_endpoints": [
+        "/api/v1/checkout",
+        "/api/v1/search"
+      ]
+    }
+  },
+  {
+    "episode_id": "341b54c0-e4c3-4b85-b53e-1014dcdf17cd",
+    "business_id": "77777777-7777-7777-7777-777777777777",
+    "business_name": "Hyperion Gaming Mesh",
+    "type": "latency_spike",
+    "metric": "response_time",
+    "severity": "high",
+    "start_time": "2026-09-14T01:57:13+00:00",
+    "end_time": "2026-09-14T02:27:13+00:00",
+    "duration_minutes": 30,
+    "description": "Database connection pool saturation causing 3.99x response latency spike on checkout/search endpoints",
+    "parameters": {
+      "multiplier": 3.99,
+      "target_endpoints": [
+        "/api/v1/checkout",
+        "/api/v1/search"
+      ]
+    }
+  },
+  {
+    "episode_id": "50e1aa3a-404c-48be-a537-0b50d0b2f947",
+    "business_id": "77777777-7777-7777-7777-777777777777",
+    "business_name": "Hyperion Gaming Mesh",
+    "type": "latency_spike",
+    "metric": "response_time",
+    "severity": "critical",
+    "start_time": "2026-09-14T09:21:13+00:00",
+    "end_time": "2026-09-14T09:51:13+00:00",
+    "duration_minutes": 30,
+    "description": "Database connection pool saturation causing 7.07x response latency spike on checkout/search endpoints",
+    "parameters": {
+      "multiplier": 7.07,
+      "target_endpoints": [
+        "/api/v1/checkout",
+        "/api/v1/search"
+      ]
+    }
+  },
+  {
+    "episode_id": "b2a62068-5925-462e-b1e8-96a462ec31db",
+    "business_id": "77777777-7777-7777-7777-777777777777",
+    "business_name": "Hyperion Gaming Mesh",
+    "type": "cpu_saturation",
+    "metric": "cpu_usage",
+    "severity": "critical",
+    "start_time": "2026-09-14T10:27:13+00:00",
+    "end_time": "2026-09-14T10:47:13+00:00",
+    "duration_minutes": 20,
+    "description": "Worker thread deadlock resulting in sustained 99.1% CPU saturation and thread queuing",
+    "parameters": {
+      "sustained_cpu_pct": 99.1
+    }
+  },
+  {
+    "episode_id": "fe8cfdd5-bf34-476f-9e15-c013f8d7c3e6",
+    "business_id": "88888888-8888-8888-8888-888888888888",
+    "business_name": "Nova Payment Gateway",
+    "type": "memory_leak",
+    "metric": "memory_usage",
+    "severity": "high",
+    "start_time": "2026-09-07T17:11:13+00:00",
+    "end_time": "2026-09-07T19:11:13+00:00",
+    "duration_minutes": 120,
+    "description": "Unbounded in-memory session cache leak gradually consuming 96.7% RAM over 120 minutes",
+    "parameters": {
+      "peak_memory_pct": 96.7
+    }
+  },
+  {
+    "episode_id": "10719fda-87f8-4260-85ed-7a0ce48df760",
+    "business_id": "88888888-8888-8888-8888-888888888888",
+    "business_name": "Nova Payment Gateway",
+    "type": "memory_leak",
+    "metric": "memory_usage",
+    "severity": "high",
+    "start_time": "2026-09-08T17:47:13+00:00",
+    "end_time": "2026-09-08T19:17:13+00:00",
+    "duration_minutes": 90,
+    "description": "Unbounded in-memory session cache leak gradually consuming 94.6% RAM over 90 minutes",
+    "parameters": {
+      "peak_memory_pct": 94.6
+    }
+  },
+  {
+    "episode_id": "71cce17e-666c-4821-8927-f5b548decb0d",
+    "business_id": "88888888-8888-8888-8888-888888888888",
+    "business_name": "Nova Payment Gateway",
+    "type": "queue_explosion",
+    "metric": "queue_depth",
+    "severity": "critical",
+    "start_time": "2026-09-08T22:12:13+00:00",
+    "end_time": "2026-09-08T22:32:13+00:00",
+    "duration_minutes": 20,
+    "description": "Upstream service degradation: ingress queue backlogged to 191 items with elevated 504 gateway timeouts",
+    "parameters": {
+      "peak_queue_depth": 191
+    }
+  },
+  {
+    "episode_id": "d07f0b4d-20f5-44dd-bcc1-6573f0e23fff",
+    "business_id": "88888888-8888-8888-8888-888888888888",
+    "business_name": "Nova Payment Gateway",
+    "type": "queue_explosion",
+    "metric": "queue_depth",
+    "severity": "critical",
+    "start_time": "2026-09-09T12:34:13+00:00",
+    "end_time": "2026-09-09T12:54:13+00:00",
+    "duration_minutes": 20,
+    "description": "Upstream service degradation: ingress queue backlogged to 204 items with elevated 504 gateway timeouts",
+    "parameters": {
+      "peak_queue_depth": 204
+    }
+  },
+  {
+    "episode_id": "d1bf409b-62f6-446c-9335-78efa977447b",
+    "business_id": "88888888-8888-8888-8888-888888888888",
+    "business_name": "Nova Payment Gateway",
+    "type": "latency_spike",
+    "metric": "response_time",
+    "severity": "high",
+    "start_time": "2026-09-10T07:00:13+00:00",
+    "end_time": "2026-09-10T07:15:13+00:00",
+    "duration_minutes": 15,
+    "description": "Database connection pool saturation causing 4.7x response latency spike on checkout/search endpoints",
+    "parameters": {
+      "multiplier": 4.7,
+      "target_endpoints": [
+        "/api/v1/checkout",
+        "/api/v1/search"
+      ]
+    }
+  },
+  {
+    "episode_id": "dfe151e9-0ef2-4654-b587-1860cfcb995e",
+    "business_id": "88888888-8888-8888-8888-888888888888",
+    "business_name": "Nova Payment Gateway",
+    "type": "memory_leak",
+    "metric": "memory_usage",
+    "severity": "high",
+    "start_time": "2026-09-10T12:28:13+00:00",
+    "end_time": "2026-09-10T13:58:13+00:00",
+    "duration_minutes": 90,
+    "description": "Unbounded in-memory session cache leak gradually consuming 98.5% RAM over 90 minutes",
+    "parameters": {
+      "peak_memory_pct": 98.5
+    }
+  },
+  {
+    "episode_id": "ddc97265-b9a6-4a59-ab98-65a8f1ec99ca",
+    "business_id": "88888888-8888-8888-8888-888888888888",
+    "business_name": "Nova Payment Gateway",
+    "type": "latency_spike",
+    "metric": "response_time",
+    "severity": "critical",
+    "start_time": "2026-09-11T01:20:13+00:00",
+    "end_time": "2026-09-11T01:40:13+00:00",
+    "duration_minutes": 20,
+    "description": "Database connection pool saturation causing 7.32x response latency spike on checkout/search endpoints",
+    "parameters": {
+      "multiplier": 7.32,
+      "target_endpoints": [
+        "/api/v1/checkout",
+        "/api/v1/search"
+      ]
+    }
+  },
+  {
+    "episode_id": "3ea7df36-a1c9-4cd5-b1ce-af3dc3f78bb2",
+    "business_id": "88888888-8888-8888-8888-888888888888",
+    "business_name": "Nova Payment Gateway",
+    "type": "latency_spike",
+    "metric": "response_time",
+    "severity": "high",
+    "start_time": "2026-09-12T05:26:13+00:00",
+    "end_time": "2026-09-12T05:41:13+00:00",
+    "duration_minutes": 15,
+    "description": "Database connection pool saturation causing 3.99x response latency spike on checkout/search endpoints",
+    "parameters": {
+      "multiplier": 3.99,
+      "target_endpoints": [
+        "/api/v1/checkout",
+        "/api/v1/search"
+      ]
+    }
+  },
+  {
+    "episode_id": "f099f004-65dd-40b6-a37c-6fd2f1dc0a97",
+    "business_id": "88888888-8888-8888-8888-888888888888",
+    "business_name": "Nova Payment Gateway",
+    "type": "memory_leak",
+    "metric": "memory_usage",
+    "severity": "high",
+    "start_time": "2026-09-12T10:48:13+00:00",
+    "end_time": "2026-09-12T12:18:13+00:00",
+    "duration_minutes": 90,
+    "description": "Unbounded in-memory session cache leak gradually consuming 97.5% RAM over 90 minutes",
+    "parameters": {
+      "peak_memory_pct": 97.5
+    }
+  },
+  {
+    "episode_id": "381ecfe6-19f5-40ec-a767-43f62a9d5d8c",
+    "business_id": "88888888-8888-8888-8888-888888888888",
+    "business_name": "Nova Payment Gateway",
+    "type": "cpu_saturation",
+    "metric": "cpu_usage",
+    "severity": "critical",
+    "start_time": "2026-09-13T22:37:13+00:00",
+    "end_time": "2026-09-13T23:07:13+00:00",
+    "duration_minutes": 30,
+    "description": "Worker thread deadlock resulting in sustained 97.2% CPU saturation and thread queuing",
+    "parameters": {
+      "sustained_cpu_pct": 97.2
+    }
+  },
+  {
+    "episode_id": "73f91312-7652-454b-a366-b2f0e39388c2",
+    "business_id": "99999999-9999-9999-9999-999999999999",
+    "business_name": "Starlight CRM Enterprise",
+    "type": "latency_spike",
+    "metric": "response_time",
+    "severity": "critical",
+    "start_time": "2026-09-08T19:09:13+00:00",
+    "end_time": "2026-09-08T19:34:13+00:00",
+    "duration_minutes": 25,
+    "description": "Database connection pool saturation causing 6.72x response latency spike on checkout/search endpoints",
+    "parameters": {
+      "multiplier": 6.72,
+      "target_endpoints": [
+        "/api/v1/checkout",
+        "/api/v1/search"
+      ]
+    }
+  },
+  {
+    "episode_id": "9db2b1a3-70a7-4ad0-a297-bb90ba9d9fed",
+    "business_id": "99999999-9999-9999-9999-999999999999",
+    "business_name": "Starlight CRM Enterprise",
+    "type": "memory_leak",
+    "metric": "memory_usage",
+    "severity": "high",
+    "start_time": "2026-09-09T05:30:13+00:00",
+    "end_time": "2026-09-09T08:30:13+00:00",
+    "duration_minutes": 180,
+    "description": "Unbounded in-memory session cache leak gradually consuming 95.1% RAM over 180 minutes",
+    "parameters": {
+      "peak_memory_pct": 95.1
+    }
+  },
+  {
+    "episode_id": "4065376d-4be7-4db1-a0fa-a24dcb24e8b8",
+    "business_id": "99999999-9999-9999-9999-999999999999",
+    "business_name": "Starlight CRM Enterprise",
+    "type": "cpu_saturation",
+    "metric": "cpu_usage",
+    "severity": "critical",
+    "start_time": "2026-09-10T03:06:13+00:00",
+    "end_time": "2026-09-10T03:26:13+00:00",
+    "duration_minutes": 20,
+    "description": "Worker thread deadlock resulting in sustained 96.5% CPU saturation and thread queuing",
+    "parameters": {
+      "sustained_cpu_pct": 96.5
+    }
+  },
+  {
+    "episode_id": "2e98ea91-2cb8-4b40-acf0-4b1368807548",
+    "business_id": "99999999-9999-9999-9999-999999999999",
+    "business_name": "Starlight CRM Enterprise",
+    "type": "latency_spike",
+    "metric": "response_time",
+    "severity": "critical",
+    "start_time": "2026-09-10T10:30:13+00:00",
+    "end_time": "2026-09-10T10:55:13+00:00",
+    "duration_minutes": 25,
+    "description": "Database connection pool saturation causing 7.36x response latency spike on checkout/search endpoints",
+    "parameters": {
+      "multiplier": 7.36,
+      "target_endpoints": [
+        "/api/v1/checkout",
+        "/api/v1/search"
+      ]
+    }
+  },
+  {
+    "episode_id": "0899791c-5817-43b5-9eaf-a3300a66c059",
+    "business_id": "99999999-9999-9999-9999-999999999999",
+    "business_name": "Starlight CRM Enterprise",
+    "type": "memory_leak",
+    "metric": "memory_usage",
+    "severity": "high",
+    "start_time": "2026-09-10T17:46:13+00:00",
+    "end_time": "2026-09-10T19:46:13+00:00",
+    "duration_minutes": 120,
+    "description": "Unbounded in-memory session cache leak gradually consuming 97.8% RAM over 120 minutes",
+    "parameters": {
+      "peak_memory_pct": 97.8
+    }
+  },
+  {
+    "episode_id": "e86ae1df-889d-471d-bb27-1cbf50c655b3",
+    "business_id": "99999999-9999-9999-9999-999999999999",
+    "business_name": "Starlight CRM Enterprise",
+    "type": "queue_explosion",
+    "metric": "queue_depth",
+    "severity": "high",
+    "start_time": "2026-09-11T16:55:13+00:00",
+    "end_time": "2026-09-11T17:25:13+00:00",
+    "duration_minutes": 30,
+    "description": "Upstream service degradation: ingress queue backlogged to 110 items with elevated 504 gateway timeouts",
+    "parameters": {
+      "peak_queue_depth": 110
+    }
+  },
+  {
+    "episode_id": "9af3b461-3ff4-4a3a-8d90-c14dc6f47c86",
+    "business_id": "99999999-9999-9999-9999-999999999999",
+    "business_name": "Starlight CRM Enterprise",
+    "type": "memory_leak",
+    "metric": "memory_usage",
+    "severity": "high",
+    "start_time": "2026-09-12T02:16:13+00:00",
+    "end_time": "2026-09-12T03:46:13+00:00",
+    "duration_minutes": 90,
+    "description": "Unbounded in-memory session cache leak gradually consuming 98.0% RAM over 90 minutes",
+    "parameters": {
+      "peak_memory_pct": 98.0
+    }
+  },
+  {
+    "episode_id": "944d7b76-cc3e-4589-8b48-b8a64b9ae15f",
+    "business_id": "99999999-9999-9999-9999-999999999999",
+    "business_name": "Starlight CRM Enterprise",
+    "type": "cpu_saturation",
+    "metric": "cpu_usage",
+    "severity": "critical",
+    "start_time": "2026-09-12T19:44:13+00:00",
+    "end_time": "2026-09-12T20:14:13+00:00",
+    "duration_minutes": 30,
+    "description": "Worker thread deadlock resulting in sustained 98.6% CPU saturation and thread queuing",
+    "parameters": {
+      "sustained_cpu_pct": 98.6
+    }
+  },
+  {
+    "episode_id": "39e1f4fe-ec51-4e2a-bb10-2a8ece34ef61",
+    "business_id": "99999999-9999-9999-9999-999999999999",
+    "business_name": "Starlight CRM Enterprise",
+    "type": "latency_spike",
+    "metric": "response_time",
+    "severity": "high",
+    "start_time": "2026-09-13T01:07:13+00:00",
+    "end_time": "2026-09-13T01:27:13+00:00",
+    "duration_minutes": 20,
+    "description": "Database connection pool saturation causing 4.43x response latency spike on checkout/search endpoints",
+    "parameters": {
+      "multiplier": 4.43,
+      "target_endpoints": [
+        "/api/v1/checkout",
+        "/api/v1/search"
+      ]
+    }
+  },
+  {
+    "episode_id": "244ce276-b666-47d0-9552-4becb3ad04ad",
+    "business_id": "99999999-9999-9999-9999-999999999999",
+    "business_name": "Starlight CRM Enterprise",
+    "type": "latency_spike",
+    "metric": "response_time",
+    "severity": "high",
+    "start_time": "2026-09-13T08:20:13+00:00",
+    "end_time": "2026-09-13T08:45:13+00:00",
+    "duration_minutes": 25,
+    "description": "Database connection pool saturation causing 4.06x response latency spike on checkout/search endpoints",
+    "parameters": {
+      "multiplier": 4.06,
+      "target_endpoints": [
+        "/api/v1/checkout",
+        "/api/v1/search"
+      ]
+    }
+  },
+  {
+    "episode_id": "2b8c7ea1-3e1b-4436-b509-22d6b843a8c3",
+    "business_id": "99999999-9999-9999-9999-999999999999",
+    "business_name": "Starlight CRM Enterprise",
+    "type": "latency_spike",
+    "metric": "response_time",
+    "severity": "critical",
+    "start_time": "2026-09-14T04:30:13+00:00",
+    "end_time": "2026-09-14T04:55:13+00:00",
+    "duration_minutes": 25,
+    "description": "Database connection pool saturation causing 5.32x response latency spike on checkout/search endpoints",
+    "parameters": {
+      "multiplier": 5.32,
+      "target_endpoints": [
+        "/api/v1/checkout",
+        "/api/v1/search"
+      ]
+    }
+  },
+  {
+    "episode_id": "55f1fb09-40d0-446a-bae6-ca49ed43d9ed",
+    "business_id": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+    "business_name": "AeroFlow IoT Telemetry",
+    "type": "memory_leak",
+    "metric": "memory_usage",
+    "severity": "high",
+    "start_time": "2026-09-07T23:53:13+00:00",
+    "end_time": "2026-09-08T03:53:13+00:00",
+    "duration_minutes": 240,
+    "description": "Unbounded in-memory session cache leak gradually consuming 96.9% RAM over 240 minutes",
+    "parameters": {
+      "peak_memory_pct": 96.9
+    }
+  },
+  {
+    "episode_id": "632c5cd5-6ac7-4e9c-a813-3dc23d4f5101",
+    "business_id": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+    "business_name": "AeroFlow IoT Telemetry",
+    "type": "memory_leak",
+    "metric": "memory_usage",
+    "severity": "high",
+    "start_time": "2026-09-08T12:25:13+00:00",
+    "end_time": "2026-09-08T16:25:13+00:00",
+    "duration_minutes": 240,
+    "description": "Unbounded in-memory session cache leak gradually consuming 98.4% RAM over 240 minutes",
+    "parameters": {
+      "peak_memory_pct": 98.4
+    }
+  },
+  {
+    "episode_id": "d5269693-8b0a-45e5-a4ec-34834cb4e502",
+    "business_id": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+    "business_name": "AeroFlow IoT Telemetry",
+    "type": "cpu_saturation",
+    "metric": "cpu_usage",
+    "severity": "critical",
+    "start_time": "2026-09-08T20:58:13+00:00",
+    "end_time": "2026-09-08T21:18:13+00:00",
+    "duration_minutes": 20,
+    "description": "Worker thread deadlock resulting in sustained 96.0% CPU saturation and thread queuing",
+    "parameters": {
+      "sustained_cpu_pct": 96.0
+    }
+  },
+  {
+    "episode_id": "986ed659-3bc0-4073-9e24-bf92af771b86",
+    "business_id": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+    "business_name": "AeroFlow IoT Telemetry",
+    "type": "memory_leak",
+    "metric": "memory_usage",
+    "severity": "high",
+    "start_time": "2026-09-13T06:10:13+00:00",
+    "end_time": "2026-09-13T09:10:13+00:00",
+    "duration_minutes": 180,
+    "description": "Unbounded in-memory session cache leak gradually consuming 94.5% RAM over 180 minutes",
+    "parameters": {
+      "peak_memory_pct": 94.5
+    }
+  },
+  {
+    "episode_id": "8c11e43d-f0e2-494a-9734-d5b09acc194b",
+    "business_id": "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
+    "business_name": "Zenith AI Inference",
+    "type": "queue_explosion",
+    "metric": "queue_depth",
+    "severity": "high",
+    "start_time": "2026-09-07T21:16:13+00:00",
+    "end_time": "2026-09-07T21:31:13+00:00",
+    "duration_minutes": 15,
+    "description": "Upstream service degradation: ingress queue backlogged to 70 items with elevated 504 gateway timeouts",
+    "parameters": {
+      "peak_queue_depth": 70
+    }
+  },
+  {
+    "episode_id": "3720f4dc-1d67-4418-9dfc-8d3e1bb65945",
+    "business_id": "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
+    "business_name": "Zenith AI Inference",
+    "type": "latency_spike",
+    "metric": "response_time",
+    "severity": "critical",
+    "start_time": "2026-09-08T05:31:13+00:00",
+    "end_time": "2026-09-08T05:56:13+00:00",
+    "duration_minutes": 25,
+    "description": "Database connection pool saturation causing 6.87x response latency spike on checkout/search endpoints",
+    "parameters": {
+      "multiplier": 6.87,
+      "target_endpoints": [
+        "/api/v1/checkout",
+        "/api/v1/search"
+      ]
+    }
+  },
+  {
+    "episode_id": "b4ff97f3-1a84-434e-879f-f373f42e87fd",
+    "business_id": "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
+    "business_name": "Zenith AI Inference",
+    "type": "latency_spike",
+    "metric": "response_time",
+    "severity": "critical",
+    "start_time": "2026-09-08T06:46:13+00:00",
+    "end_time": "2026-09-08T07:16:13+00:00",
+    "duration_minutes": 30,
+    "description": "Database connection pool saturation causing 7.2x response latency spike on checkout/search endpoints",
+    "parameters": {
+      "multiplier": 7.2,
+      "target_endpoints": [
+        "/api/v1/checkout",
+        "/api/v1/search"
+      ]
+    }
+  },
+  {
+    "episode_id": "4e8c408c-038c-4ead-b4ff-f123584383f2",
+    "business_id": "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
+    "business_name": "Zenith AI Inference",
+    "type": "queue_explosion",
+    "metric": "queue_depth",
+    "severity": "high",
+    "start_time": "2026-09-08T14:57:13+00:00",
+    "end_time": "2026-09-08T15:12:13+00:00",
+    "duration_minutes": 15,
+    "description": "Upstream service degradation: ingress queue backlogged to 109 items with elevated 504 gateway timeouts",
+    "parameters": {
+      "peak_queue_depth": 109
+    }
+  },
+  {
+    "episode_id": "df19088a-f67d-4b81-8871-0d1a83ee4519",
+    "business_id": "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
+    "business_name": "Zenith AI Inference",
+    "type": "latency_spike",
+    "metric": "response_time",
+    "severity": "high",
+    "start_time": "2026-09-08T19:11:13+00:00",
+    "end_time": "2026-09-08T19:31:13+00:00",
+    "duration_minutes": 20,
+    "description": "Database connection pool saturation causing 4.45x response latency spike on checkout/search endpoints",
+    "parameters": {
+      "multiplier": 4.45,
+      "target_endpoints": [
+        "/api/v1/checkout",
+        "/api/v1/search"
+      ]
+    }
+  },
+  {
+    "episode_id": "b5c6ba67-a826-4649-bb09-6b9dde976275",
+    "business_id": "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
+    "business_name": "Zenith AI Inference",
+    "type": "memory_leak",
+    "metric": "memory_usage",
+    "severity": "high",
+    "start_time": "2026-09-09T03:58:13+00:00",
+    "end_time": "2026-09-09T07:58:13+00:00",
+    "duration_minutes": 240,
+    "description": "Unbounded in-memory session cache leak gradually consuming 97.8% RAM over 240 minutes",
+    "parameters": {
+      "peak_memory_pct": 97.8
+    }
+  },
+  {
+    "episode_id": "be76f133-77ef-4aa6-9ac7-0ec9758f7543",
+    "business_id": "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
+    "business_name": "Zenith AI Inference",
+    "type": "queue_explosion",
+    "metric": "queue_depth",
+    "severity": "high",
+    "start_time": "2026-09-10T16:38:13+00:00",
+    "end_time": "2026-09-10T16:53:13+00:00",
+    "duration_minutes": 15,
+    "description": "Upstream service degradation: ingress queue backlogged to 86 items with elevated 504 gateway timeouts",
+    "parameters": {
+      "peak_queue_depth": 86
+    }
+  },
+  {
+    "episode_id": "e18c7171-e6fc-41f9-858e-a0793cdb4543",
+    "business_id": "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
+    "business_name": "Zenith AI Inference",
+    "type": "cpu_saturation",
+    "metric": "cpu_usage",
+    "severity": "critical",
+    "start_time": "2026-09-11T03:40:13+00:00",
+    "end_time": "2026-09-11T04:25:13+00:00",
+    "duration_minutes": 45,
+    "description": "Worker thread deadlock resulting in sustained 95.0% CPU saturation and thread queuing",
+    "parameters": {
+      "sustained_cpu_pct": 95.0
+    }
+  },
+  {
+    "episode_id": "e506ee83-c1c9-4608-aa14-5fb501b73b4a",
+    "business_id": "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
+    "business_name": "Zenith AI Inference",
+    "type": "latency_spike",
+    "metric": "response_time",
+    "severity": "critical",
+    "start_time": "2026-09-11T23:37:13+00:00",
+    "end_time": "2026-09-11T23:52:13+00:00",
+    "duration_minutes": 15,
+    "description": "Database connection pool saturation causing 5.17x response latency spike on checkout/search endpoints",
+    "parameters": {
+      "multiplier": 5.17,
+      "target_endpoints": [
+        "/api/v1/checkout",
+        "/api/v1/search"
+      ]
+    }
+  },
+  {
+    "episode_id": "2d268d4a-8a56-4756-885e-9a3d458b1d51",
+    "business_id": "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
+    "business_name": "Zenith AI Inference",
+    "type": "latency_spike",
+    "metric": "response_time",
+    "severity": "critical",
+    "start_time": "2026-09-12T05:49:13+00:00",
+    "end_time": "2026-09-12T06:14:13+00:00",
+    "duration_minutes": 25,
+    "description": "Database connection pool saturation causing 5.07x response latency spike on checkout/search endpoints",
+    "parameters": {
+      "multiplier": 5.07,
+      "target_endpoints": [
+        "/api/v1/checkout",
+        "/api/v1/search"
+      ]
+    }
+  },
+  {
+    "episode_id": "94038318-2283-4730-83b1-5b74253f19a4",
+    "business_id": "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
+    "business_name": "Zenith AI Inference",
+    "type": "queue_explosion",
+    "metric": "queue_depth",
+    "severity": "high",
+    "start_time": "2026-09-12T10:38:13+00:00",
+    "end_time": "2026-09-12T10:53:13+00:00",
+    "duration_minutes": 15,
+    "description": "Upstream service degradation: ingress queue backlogged to 77 items with elevated 504 gateway timeouts",
+    "parameters": {
+      "peak_queue_depth": 77
+    }
+  },
+  {
+    "episode_id": "801b8283-9504-4129-a789-9c79aad81e24",
+    "business_id": "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
+    "business_name": "Zenith AI Inference",
+    "type": "latency_spike",
+    "metric": "response_time",
+    "severity": "critical",
+    "start_time": "2026-09-13T06:51:13+00:00",
+    "end_time": "2026-09-13T07:06:13+00:00",
+    "duration_minutes": 15,
+    "description": "Database connection pool saturation causing 5.86x response latency spike on checkout/search endpoints",
+    "parameters": {
+      "multiplier": 5.86,
+      "target_endpoints": [
+        "/api/v1/checkout",
+        "/api/v1/search"
+      ]
+    }
+  },
+  {
+    "episode_id": "4ba07410-f2f5-4ad9-a027-82fc486d30d0",
+    "business_id": "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
+    "business_name": "Zenith AI Inference",
+    "type": "queue_explosion",
+    "metric": "queue_depth",
+    "severity": "critical",
+    "start_time": "2026-09-13T09:58:13+00:00",
+    "end_time": "2026-09-13T10:28:13+00:00",
+    "duration_minutes": 30,
+    "description": "Upstream service degradation: ingress queue backlogged to 145 items with elevated 504 gateway timeouts",
+    "parameters": {
+      "peak_queue_depth": 145
+    }
+  },
+  {
+    "episode_id": "0d277fd6-5271-4afd-8b15-91a81f291d7e",
+    "business_id": "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
+    "business_name": "Zenith AI Inference",
+    "type": "memory_leak",
+    "metric": "memory_usage",
+    "severity": "high",
+    "start_time": "2026-09-14T06:33:13+00:00",
+    "end_time": "2026-09-14T08:33:13+00:00",
+    "duration_minutes": 120,
+    "description": "Unbounded in-memory session cache leak gradually consuming 98.2% RAM over 120 minutes",
+    "parameters": {
+      "peak_memory_pct": 98.2
+    }
+  },
+  {
+    "episode_id": "e996c38c-7beb-445f-8fa3-791235451b1a",
+    "business_id": "cccccccc-cccc-cccc-cccc-cccccccccccc",
+    "business_name": "PulseWave Analytics Engine",
+    "type": "cpu_saturation",
+    "metric": "cpu_usage",
+    "severity": "critical",
+    "start_time": "2026-09-09T03:36:13+00:00",
+    "end_time": "2026-09-09T04:06:13+00:00",
+    "duration_minutes": 30,
+    "description": "Worker thread deadlock resulting in sustained 96.2% CPU saturation and thread queuing",
+    "parameters": {
+      "sustained_cpu_pct": 96.2
+    }
+  },
+  {
+    "episode_id": "ff04d72d-0fee-4961-a8b5-794047b38f00",
+    "business_id": "cccccccc-cccc-cccc-cccc-cccccccccccc",
+    "business_name": "PulseWave Analytics Engine",
+    "type": "memory_leak",
+    "metric": "memory_usage",
+    "severity": "high",
+    "start_time": "2026-09-09T17:46:13+00:00",
+    "end_time": "2026-09-09T20:46:13+00:00",
+    "duration_minutes": 180,
+    "description": "Unbounded in-memory session cache leak gradually consuming 98.1% RAM over 180 minutes",
+    "parameters": {
+      "peak_memory_pct": 98.1
+    }
+  },
+  {
+    "episode_id": "d5339821-b2e2-49c7-951c-56ac807b22ad",
+    "business_id": "cccccccc-cccc-cccc-cccc-cccccccccccc",
+    "business_name": "PulseWave Analytics Engine",
+    "type": "latency_spike",
+    "metric": "response_time",
+    "severity": "critical",
+    "start_time": "2026-09-10T12:59:13+00:00",
+    "end_time": "2026-09-10T13:14:13+00:00",
+    "duration_minutes": 15,
+    "description": "Database connection pool saturation causing 5.17x response latency spike on checkout/search endpoints",
+    "parameters": {
+      "multiplier": 5.17,
+      "target_endpoints": [
+        "/api/v1/checkout",
+        "/api/v1/search"
+      ]
+    }
+  },
+  {
+    "episode_id": "0f104be2-743a-44f3-ba15-9771656b8d41",
+    "business_id": "cccccccc-cccc-cccc-cccc-cccccccccccc",
+    "business_name": "PulseWave Analytics Engine",
+    "type": "queue_explosion",
+    "metric": "queue_depth",
+    "severity": "critical",
+    "start_time": "2026-09-10T17:42:13+00:00",
+    "end_time": "2026-09-10T18:12:13+00:00",
+    "duration_minutes": 30,
+    "description": "Upstream service degradation: ingress queue backlogged to 179 items with elevated 504 gateway timeouts",
+    "parameters": {
+      "peak_queue_depth": 179
+    }
+  },
+  {
+    "episode_id": "a51bed20-ee28-4046-ac6e-899e7cd7569c",
+    "business_id": "cccccccc-cccc-cccc-cccc-cccccccccccc",
+    "business_name": "PulseWave Analytics Engine",
+    "type": "cpu_saturation",
+    "metric": "cpu_usage",
+    "severity": "critical",
+    "start_time": "2026-09-11T22:48:13+00:00",
+    "end_time": "2026-09-11T23:33:13+00:00",
+    "duration_minutes": 45,
+    "description": "Worker thread deadlock resulting in sustained 95.8% CPU saturation and thread queuing",
+    "parameters": {
+      "sustained_cpu_pct": 95.8
+    }
+  },
+  {
+    "episode_id": "5e811c62-6964-4b50-a193-00281346a30b",
+    "business_id": "cccccccc-cccc-cccc-cccc-cccccccccccc",
+    "business_name": "PulseWave Analytics Engine",
+    "type": "queue_explosion",
+    "metric": "queue_depth",
+    "severity": "high",
+    "start_time": "2026-09-12T15:25:13+00:00",
+    "end_time": "2026-09-12T15:55:13+00:00",
+    "duration_minutes": 30,
+    "description": "Upstream service degradation: ingress queue backlogged to 88 items with elevated 504 gateway timeouts",
+    "parameters": {
+      "peak_queue_depth": 88
+    }
+  },
+  {
+    "episode_id": "c4470c01-3ba1-486c-a0e0-a3ada1d5e34c",
+    "business_id": "cccccccc-cccc-cccc-cccc-cccccccccccc",
+    "business_name": "PulseWave Analytics Engine",
+    "type": "memory_leak",
+    "metric": "memory_usage",
+    "severity": "high",
+    "start_time": "2026-09-12T20:10:13+00:00",
+    "end_time": "2026-09-12T23:10:13+00:00",
+    "duration_minutes": 180,
+    "description": "Unbounded in-memory session cache leak gradually consuming 97.1% RAM over 180 minutes",
+    "parameters": {
+      "peak_memory_pct": 97.1
+    }
+  }
+]

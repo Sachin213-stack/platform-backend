@@ -1,0 +1,221 @@
+{
+  "phase": "Phase 4 - Threshold & Contamination Recalibration",
+  "timestamp_utc": "2026-09-14T13:06:02.913357+00:00",
+  "contamination_sweep_curve": {
+    "c_0.01000": {
+      "contamination": 0.01,
+      "metrics": {
+        "precision": 0.7431,
+        "recall": 0.1735,
+        "f1_score": 0.2814,
+        "false_positive_rate": 0.0029,
+        "tp": 509,
+        "fp": 176,
+        "fn": 2424,
+        "tn": 60076
+      }
+    },
+    "c_0.02000": {
+      "contamination": 0.02,
+      "metrics": {
+        "precision": 0.5727,
+        "recall": 0.2578,
+        "f1_score": 0.3555,
+        "false_positive_rate": 0.0094,
+        "tp": 756,
+        "fp": 564,
+        "fn": 2177,
+        "tn": 59688
+      }
+    },
+    "c_0.03000": {
+      "contamination": 0.03,
+      "metrics": {
+        "precision": 0.4357,
+        "recall": 0.2878,
+        "f1_score": 0.3466,
+        "false_positive_rate": 0.0181,
+        "tp": 844,
+        "fp": 1093,
+        "fn": 2089,
+        "tn": 59159
+      }
+    },
+    "c_0.04000": {
+      "contamination": 0.04,
+      "metrics": {
+        "precision": 0.372,
+        "recall": 0.3894,
+        "f1_score": 0.3805,
+        "false_positive_rate": 0.032,
+        "tp": 1142,
+        "fp": 1928,
+        "fn": 1791,
+        "tn": 58324
+      }
+    },
+    "c_0.05000": {
+      "contamination": 0.05,
+      "metrics": {
+        "precision": 0.3381,
+        "recall": 0.464,
+        "f1_score": 0.3911,
+        "false_positive_rate": 0.0442,
+        "tp": 1361,
+        "fp": 2665,
+        "fn": 1572,
+        "tn": 57587
+      }
+    },
+    "c_0.05236": {
+      "contamination": 0.05236,
+      "metrics": {
+        "precision": 0.3339,
+        "recall": 0.4845,
+        "f1_score": 0.3953,
+        "false_positive_rate": 0.0471,
+        "tp": 1421,
+        "fp": 2835,
+        "fn": 1512,
+        "tn": 57417
+      }
+    },
+    "c_0.06000": {
+      "contamination": 0.06,
+      "metrics": {
+        "precision": 0.3093,
+        "recall": 0.5424,
+        "f1_score": 0.394,
+        "false_positive_rate": 0.059,
+        "tp": 1591,
+        "fp": 3553,
+        "fn": 1342,
+        "tn": 56699
+      }
+    },
+    "c_0.08000": {
+      "contamination": 0.08,
+      "metrics": {
+        "precision": 0.224,
+        "recall": 0.5946,
+        "f1_score": 0.3255,
+        "false_positive_rate": 0.1002,
+        "tp": 1744,
+        "fp": 6040,
+        "fn": 1189,
+        "tn": 54212
+      }
+    },
+    "c_0.10000": {
+      "contamination": 0.1,
+      "metrics": {
+        "precision": 0.1841,
+        "recall": 0.64,
+        "f1_score": 0.2859,
+        "false_positive_rate": 0.1381,
+        "tp": 1877,
+        "fp": 8319,
+        "fn": 1056,
+        "tn": 51933
+      }
+    }
+  },
+  "best_raw_contamination": 0.05236,
+  "adaptive_percentile_thresholds": {
+    "percentile_95": {
+      "percentile": 95,
+      "metrics": {
+        "precision": 0.2245,
+        "recall": 0.5029,
+        "f1_score": 0.3104,
+        "false_positive_rate": 0.0846,
+        "tp": 1475,
+        "fp": 5096,
+        "fn": 1458,
+        "tn": 55156
+      },
+      "tenant_thresholds": {
+        "11111111-1111-1111-1111-111111111111": 0.1653,
+        "22222222-2222-2222-2222-222222222222": -0.0772,
+        "33333333-3333-3333-3333-333333333333": -0.0613,
+        "44444444-4444-4444-4444-444444444444": -0.0266,
+        "55555555-5555-5555-5555-555555555555": 0.1533,
+        "66666666-6666-6666-6666-666666666666": -0.0595,
+        "77777777-7777-7777-7777-777777777777": -0.0311,
+        "88888888-8888-8888-8888-888888888888": -0.0318,
+        "99999999-9999-9999-9999-999999999999": -0.0436,
+        "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa": -0.0339,
+        "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb": -0.0383,
+        "cccccccc-cccc-cccc-cccc-cccccccccccc": -0.0317
+      }
+    },
+    "percentile_98": {
+      "percentile": 98,
+      "metrics": {
+        "precision": 0.488,
+        "recall": 0.3399,
+        "f1_score": 0.4007,
+        "false_positive_rate": 0.0174,
+        "tp": 997,
+        "fp": 1046,
+        "fn": 1936,
+        "tn": 59206
+      },
+      "tenant_thresholds": {
+        "11111111-1111-1111-1111-111111111111": 0.2077,
+        "22222222-2222-2222-2222-222222222222": -0.0524,
+        "33333333-3333-3333-3333-333333333333": 0.0243,
+        "44444444-4444-4444-4444-444444444444": 0.0302,
+        "55555555-5555-5555-5555-555555555555": 0.1965,
+        "66666666-6666-6666-6666-666666666666": 0.0016,
+        "77777777-7777-7777-7777-777777777777": 0.0244,
+        "88888888-8888-8888-8888-888888888888": 0.0198,
+        "99999999-9999-9999-9999-999999999999": 0.0419,
+        "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa": 0.0004,
+        "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb": 0.0134,
+        "cccccccc-cccc-cccc-cccc-cccccccccccc": 0.019
+      }
+    },
+    "percentile_99": {
+      "percentile": 99,
+      "metrics": {
+        "precision": 0.8179,
+        "recall": 0.2083,
+        "f1_score": 0.3321,
+        "false_positive_rate": 0.0023,
+        "tp": 611,
+        "fp": 136,
+        "fn": 2322,
+        "tn": 60116
+      },
+      "tenant_thresholds": {
+        "11111111-1111-1111-1111-111111111111": 0.2274,
+        "22222222-2222-2222-2222-222222222222": -0.0116,
+        "33333333-3333-3333-3333-333333333333": 0.1598,
+        "44444444-4444-4444-4444-444444444444": 0.0801,
+        "55555555-5555-5555-5555-555555555555": 0.2128,
+        "66666666-6666-6666-6666-666666666666": 0.0988,
+        "77777777-7777-7777-7777-777777777777": 0.2139,
+        "88888888-8888-8888-8888-888888888888": 0.0591,
+        "99999999-9999-9999-9999-999999999999": 0.0962,
+        "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa": 0.0156,
+        "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb": 0.1377,
+        "cccccccc-cccc-cccc-cccc-cccccccccccc": 0.0579
+      }
+    }
+  },
+  "calibrated_operational_point": {
+    "description": "Calibrated Base (c=0.05236) + Sequential Drift + k=4 Debouncing",
+    "metrics": {
+      "precision": 0.9703,
+      "recall": 0.7344,
+      "f1_score": 0.836,
+      "false_positive_rate": 0.0011,
+      "tp": 2154,
+      "fp": 66,
+      "fn": 779,
+      "tn": 60186
+    },
+    "recommendation": "Use contamination=0.04 with k=4 alert debouncer for production stability."
+  }
+}

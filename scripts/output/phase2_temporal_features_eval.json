@@ -1,0 +1,154 @@
+{
+  "phase": "Phase 2 - Temporal Features & Sequential Drift POC",
+  "timestamp_utc": "2026-09-14T13:02:50.014120+00:00",
+  "phase1_baseline": {
+    "description": "Phase 1 Baseline (Raw Features with ColumnTransformer)",
+    "metrics": {
+      "precision": 0.3339,
+      "recall": 0.4845,
+      "f1_score": 0.3953,
+      "roc_auc": 0.7857,
+      "false_positive_rate": 0.0471,
+      "tp": 1421,
+      "fp": 2835,
+      "fn": 1512,
+      "tn": 57417
+    },
+    "type_recall": {
+      "latency_spike": {
+        "recall": 0.7556,
+        "detected": 436,
+        "total": 577
+      },
+      "cpu_saturation": {
+        "recall": 1.0,
+        "detected": 301,
+        "total": 301
+      },
+      "queue_explosion": {
+        "recall": 1.0,
+        "detected": 429,
+        "total": 429
+      },
+      "memory_leak": {
+        "recall": 0.1568,
+        "detected": 255,
+        "total": 1626
+      }
+    }
+  },
+  "phase2_raw_plus_all_temporal": {
+    "description": "Raw Features + All 24 Rolling Temporal Features in IsolationForest",
+    "metrics": {
+      "precision": 0.319,
+      "recall": 0.4197,
+      "f1_score": 0.3625,
+      "roc_auc": 0.8522,
+      "false_positive_rate": 0.0436,
+      "tp": 1231,
+      "fp": 2628,
+      "fn": 1702,
+      "tn": 57624
+    },
+    "type_recall": {
+      "latency_spike": {
+        "recall": 0.364,
+        "detected": 210,
+        "total": 577
+      },
+      "cpu_saturation": {
+        "recall": 1.0,
+        "detected": 301,
+        "total": 301
+      },
+      "queue_explosion": {
+        "recall": 1.0,
+        "detected": 429,
+        "total": 429
+      },
+      "memory_leak": {
+        "recall": 0.179,
+        "detected": 291,
+        "total": 1626
+      }
+    },
+    "memory_leak_target_met": false
+  },
+  "sequence_drift_poc": {
+    "description": "Sequence-Based Rolling-Window Drift Detector (Trailing Slope Windows)",
+    "thresholds": {
+      "thresh_slope_60m": 4.7,
+      "thresh_slope_15m": 3.1
+    },
+    "metrics": {
+      "precision": 0.6464,
+      "recall": 0.4125,
+      "f1_score": 0.5036,
+      "roc_auc": 0.0,
+      "false_positive_rate": 0.011,
+      "tp": 1210,
+      "fp": 662,
+      "fn": 1723,
+      "tn": 59590
+    },
+    "type_recall": {
+      "latency_spike": {
+        "recall": 0.0069,
+        "detected": 4,
+        "total": 577
+      },
+      "cpu_saturation": {
+        "recall": 0.0033,
+        "detected": 1,
+        "total": 301
+      },
+      "queue_explosion": {
+        "recall": 0.0023,
+        "detected": 1,
+        "total": 429
+      },
+      "memory_leak": {
+        "recall": 0.7405,
+        "detected": 1204,
+        "total": 1626
+      }
+    }
+  },
+  "hybrid_production_candidate": {
+    "description": "Hybrid Ensemble: Spatial IsolationForest + Sequential Drift Detector",
+    "metrics": {
+      "precision": 0.4067,
+      "recall": 0.8104,
+      "f1_score": 0.5416,
+      "roc_auc": 0.8973,
+      "false_positive_rate": 0.0576,
+      "tp": 2377,
+      "fp": 3468,
+      "fn": 556,
+      "tn": 56784
+    },
+    "type_recall": {
+      "latency_spike": {
+        "recall": 0.7556,
+        "detected": 436,
+        "total": 577
+      },
+      "cpu_saturation": {
+        "recall": 1.0,
+        "detected": 301,
+        "total": 301
+      },
+      "queue_explosion": {
+        "recall": 1.0,
+        "detected": 429,
+        "total": 429
+      },
+      "memory_leak": {
+        "recall": 0.7448,
+        "detected": 1211,
+        "total": 1626
+      }
+    },
+    "memory_leak_target_met": true
+  }
+}
