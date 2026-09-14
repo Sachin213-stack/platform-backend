@@ -1,9 +1,12 @@
+import asyncio
 from contextlib import asynccontextmanager
+from typing import Optional
+import time
+import uuid
+
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-import time
-import uuid
 
 from app.core.config import settings
 from app.core.logging import (
@@ -16,6 +19,7 @@ from app.core.logging import (
 from app.db.session import engine
 from app.db.base import Base
 from app.services.redis_service import redis_service
+from app.workers.ml_jobs import MLWorker
 
 # Routers
 from app.api.routes.health import router as health_router
@@ -56,10 +60,98 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         logger.warning("Database migration during startup skipped or failed: %s; operating in decoupled mode", e)
 
+    # -------------------------------------------------------------
+    # MLWorker Embedded Background Scheduler
+    # NOTE / KNOWN GAP: Redis lock contention across multiple instances is not
+    # exercised in this single-instance embedded run. Distributed locking behavior
+    # under multi-worker contention remains an explicit known-gap to be validated
+    # in multi-instance/distributed cluster deployments.
+    # -------------------------------------------------------------
+    ml_worker: Optional[MLWorker] = None
+    worker_task: Optional[asyncio.Task] = None
+    is_shutting_down: bool = False
+
+    def _worker_done_callback(t: asyncio.Task) -> None:
+        if not is_shutting_down and not t.cancelled():
+            exc = t.exception()
+            if exc:
+                logger.error(
+                    "MLWorker background task terminated unexpectedly with error: %s",
+                    exc,
+                    exc_info=exc,
+                )
+            else:
+                logger.warning("MLWorker background task exited unexpectedly while application is running.")
+
+    async def _run_worker_guarded() -> None:
+        # Pre-check Redis connection availability
+        if redis_service.redis is None:
+            raise ConnectionError(
+                "Redis server is unreachable or offline; MLWorker requires Redis for distributed locking and coordination"
+            )
+        try:
+            await redis_service.redis.ping()
+        except Exception as e:
+            raise ConnectionError(f"Redis ping probe failed: {e}") from e
+        await ml_worker.run()
+
+    try:
+        ml_worker = MLWorker()
+        worker_task = asyncio.create_task(_run_worker_guarded())
+        worker_task.add_done_callback(_worker_done_callback)
+
+        # Brief yield to catch immediate startup failures (e.g., Redis unreachable, scheduler init error)
+        await asyncio.sleep(0.05)
+        if worker_task.done():
+            exc = worker_task.exception()
+            if exc:
+                logger.error(
+                    "MLWorker failed to start during lifespan startup: %s",
+                    exc,
+                    exc_info=exc,
+                )
+                worker_task = None
+            else:
+                logger.warning("MLWorker task completed immediately after startup.")
+        else:
+            logger.info("MLWorker embedded scheduler started in background task.")
+    except Exception as e:
+        logger.error(
+            "Failed to initialize or launch MLWorker during lifespan startup: %s",
+            e,
+            exc_info=True,
+        )
+        ml_worker = None
+        worker_task = None
+
     yield
 
     # Shutdown
+    is_shutting_down = True
     logger.info("Shutting down AI-CTO Backend...")
+    if ml_worker:
+        logger.info("Shutting down MLWorker scheduler...")
+        ml_worker.stop()
+
+    if worker_task:
+        if worker_task.done():
+            exc = worker_task.exception()
+            if exc:
+                logger.error(
+                    "MLWorker background task was found dead during shutdown with exception: %s",
+                    exc,
+                    exc_info=exc,
+                )
+            else:
+                logger.info("MLWorker task had already finished prior to shutdown.")
+        else:
+            try:
+                await asyncio.wait_for(worker_task, timeout=5.0)
+            except (asyncio.TimeoutError, TimeoutError):
+                logger.warning("MLWorker did not terminate within timeout.")
+            except Exception as e:
+                logger.warning("Error waiting for MLWorker shutdown: %s", e)
+
     try:
         await redis_service.disconnect()
         await engine.dispose()
@@ -138,6 +230,7 @@ async def global_exception_handler(request: Request, exc: Exception):
 
 
 # Mount API Routers
+app.include_router(health_router)
 app.include_router(health_router, prefix=settings.API_V1_STR)
 app.include_router(auth_router, prefix=settings.API_V1_STR)
 app.include_router(dashboard_router, prefix=settings.API_V1_STR)

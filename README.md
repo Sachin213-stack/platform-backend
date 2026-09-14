@@ -122,6 +122,12 @@ platform-backend/
 
 ---
 
+## ⚠️ Known Gaps & Clustered Limitations
+
+- **Multi-Instance Redis Lock Contention**: The embedded `MLWorker` lifespan implementation is verified for a single-instance embedded runtime. Distributed Redis lock contention across multiple horizontally scaled backend worker instances is not exercised by current embedded test suites and remains an explicit known gap to be tested in distributed / multi-replica environments.
+
+---
+
 ## 📄 License
 
 MIT © [AI-CTO Engineering Team](https://github.com/Sachin213-stack)
