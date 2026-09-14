@@ -70,20 +70,29 @@ async def lifespan(app: FastAPI):
     ml_worker: Optional[MLWorker] = None
     worker_task: Optional[asyncio.Task] = None
     is_shutting_down: bool = False
+    worker_started_successfully: bool = False
 
     def _worker_done_callback(t: asyncio.Task) -> None:
-        if not is_shutting_down and not t.cancelled():
-            exc = t.exception()
-            if exc:
-                logger.error(
-                    "MLWorker background task terminated unexpectedly with error: %s",
-                    exc,
-                    exc_info=exc,
-                )
-            else:
-                logger.warning("MLWorker background task exited unexpectedly while application is running.")
+        if is_shutting_down or t.cancelled():
+            return
+
+        exc = t.exception()
+        if not worker_started_successfully:
+            # Startup failure: handled explicitly in lifespan startup check.
+            # Do not duplicate or mislabel as runtime crash.
+            return
+
+        if exc:
+            logger.error(
+                "MLWorker background task terminated unexpectedly with error: %s",
+                exc,
+                exc_info=exc,
+            )
+        else:
+            logger.warning("MLWorker background task exited unexpectedly while application is running.")
 
     async def _run_worker_guarded() -> None:
+        nonlocal worker_started_successfully
         # Pre-check Redis connection availability
         if redis_service.redis is None:
             raise ConnectionError(
@@ -93,34 +102,59 @@ async def lifespan(app: FastAPI):
             await redis_service.redis.ping()
         except Exception as e:
             raise ConnectionError(f"Redis ping probe failed: {e}") from e
-        await ml_worker.run()
+
+        # Monitor for forced crash injection during mid-run testing if event configured
+        if hasattr(app.state, "_inject_worker_crash_event"):
+            crash_task = asyncio.create_task(app.state._inject_worker_crash_event.wait())
+            worker_run_task = asyncio.create_task(ml_worker.run())
+            done, _ = await asyncio.wait(
+                [worker_run_task, crash_task],
+                return_when=asyncio.FIRST_COMPLETED,
+            )
+            if crash_task in done and app.state._inject_worker_crash_event.is_set():
+                worker_run_task.cancel()
+                exc_to_raise = getattr(
+                    app.state,
+                    "_injected_worker_exception",
+                    RuntimeError("Forced mid-run worker crash"),
+                )
+                raise exc_to_raise
+            else:
+                crash_task.cancel()
+                await worker_run_task
+        else:
+            await ml_worker.run()
 
     try:
+        # Initialize crash injection event hook on app.state
+        app.state._inject_worker_crash_event = asyncio.Event()
+        app.state.inject_worker_crash = lambda exc=None: (
+            setattr(app.state, "_injected_worker_exception", exc or RuntimeError("Forced mid-run worker crash")),
+            app.state._inject_worker_crash_event.set(),
+        )
+
         ml_worker = MLWorker()
         worker_task = asyncio.create_task(_run_worker_guarded())
         worker_task.add_done_callback(_worker_done_callback)
 
+        app.state.ml_worker = ml_worker
+        app.state.worker_task = worker_task
+
         # Brief yield to catch immediate startup failures (e.g., Redis unreachable, scheduler init error)
-        await asyncio.sleep(0.05)
+        await asyncio.sleep(0.1)
         if worker_task.done():
             exc = worker_task.exception()
             if exc:
-                logger.error(
-                    "MLWorker failed to start during lifespan startup: %s",
-                    exc,
-                    exc_info=exc,
-                )
+                logger.error("MLWorker failed to start: %s", exc, exc_info=exc)
                 worker_task = None
             else:
                 logger.warning("MLWorker task completed immediately after startup.")
         else:
+            worker_started_successfully = True
+            app.state.worker_started_successfully = True
             logger.info("MLWorker embedded scheduler started in background task.")
     except Exception as e:
-        logger.error(
-            "Failed to initialize or launch MLWorker during lifespan startup: %s",
-            e,
-            exc_info=True,
-        )
+        logger.error("MLWorker failed to start: %s", e, exc_info=True)
         ml_worker = None
         worker_task = None
 
