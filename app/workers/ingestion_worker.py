@@ -10,8 +10,9 @@ from app.db.session import engine
 
 
 class IngestionWorker:
-    def __init__(self) -> None:
+    def __init__(self, embedded: bool = False) -> None:
         self.is_running = True
+        self.embedded = embedded
 
     def stop(self) -> None:
         logger.info("Received termination signal, shutting down ingestion worker gracefully...")
@@ -19,6 +20,8 @@ class IngestionWorker:
 
     def _register_signal_handlers(self) -> None:
         """Register signal handlers on the RUNNING event loop (inside async context)."""
+        if self.embedded:
+            return
         loop = asyncio.get_running_loop()
         try:
             # Unix: register SIGINT and SIGTERM on the active loop
@@ -31,13 +34,14 @@ class IngestionWorker:
 
     async def run(self) -> None:
         setup_logging()
-        logger.info("Starting AI-CTO Telemetry Ingestion Background Worker...")
+        logger.info("Starting AI-CTO Telemetry Ingestion Background Worker (embedded=%s)...", self.embedded)
 
-        # Register signal handlers on the active event loop
+        # Register signal handlers on the active event loop if standalone
         self._register_signal_handlers()
 
-        # Connect Redis
-        await redis_service.connect()
+        # Connect Redis if standalone
+        if not self.embedded:
+            await redis_service.connect()
         await ingestion_service.ensure_consumer_group()
 
         logger.info(
@@ -60,14 +64,15 @@ class IngestionWorker:
                 await asyncio.sleep(2.0)
 
         # Cleanup on exit
-        logger.info("Cleaning up resources on ingestion worker exit...")
-        await redis_service.disconnect()
-        await engine.dispose()
+        if not self.embedded:
+            logger.info("Cleaning up resources on standalone ingestion worker exit...")
+            await redis_service.disconnect()
+            await engine.dispose()
         logger.info("Ingestion worker shutdown complete.")
 
 
 def main():
-    worker = IngestionWorker()
+    worker = IngestionWorker(embedded=False)
     try:
         asyncio.run(worker.run())
     except (KeyboardInterrupt, SystemExit):

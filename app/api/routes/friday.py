@@ -1,5 +1,5 @@
 import uuid
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.responses import StreamingResponse
@@ -132,7 +132,10 @@ async def chat_with_friday(
     if await is_db_available():
         try:
             conv_uuid = uuid.UUID(conv_id)
-            conv_stmt = select(Conversation).where(Conversation.id == conv_uuid)
+            conv_stmt = select(Conversation).where(
+                Conversation.id == conv_uuid,
+                Conversation.business_id == current_user.business_id,
+            )
             existing_conv = (await db.execute(conv_stmt)).scalars().first()
 
             if existing_conv:
@@ -256,6 +259,43 @@ async def execute_friday_action(
     }
     await redis_service.set_cache(f"audit:action:{action_id}", audit_entry, ttl_seconds=86400 * 7)
 
+    # Append to tenant audit history list for dashboard and audit page
+    try:
+        tenant_audit_key = f"tenant:{biz_id}:audit_actions"
+        existing_audits = await redis_service.get_cache(tenant_audit_key) or []
+        if not isinstance(existing_audits, list):
+            existing_audits = []
+        existing_audits.insert(0, audit_entry)
+        await redis_service.set_cache(tenant_audit_key, existing_audits[:100], ttl_seconds=86400 * 30)
+    except Exception as e:
+        logger.debug("Could not record tenant audit action: %s", e)
+
+    # If conversation_id is provided, record action execution into session memory
+    if request.conversation_id:
+        try:
+            conv_id = _normalize_conversation_id(request.conversation_id, biz_id)
+            session_messages = await redis_service.get_session_memory(biz_id, conv_id)
+            session_messages.append({"role": "assistant", "content": f"✅ Executed mitigation action: {success_msg}"})
+            await redis_service.save_session_memory(biz_id, conv_id, session_messages, ttl_seconds=86400)
+        except Exception as e:
+            logger.debug("Could not record action into conversation session: %s", e)
+
+    # Auto-resolve matching anomalies in DB if online
+    if await is_db_available() and request.service:
+        try:
+            from app.db.models.ml import Anomaly
+            update_stmt = select(Anomaly).where(
+                Anomaly.business_id == current_user.business_id,
+                Anomaly.is_resolved.is_(False),
+            )
+            anoms_to_resolve = (await db.execute(update_stmt)).scalars().all()
+            for anom in anoms_to_resolve:
+                if request.service.lower() in (anom.description or "").lower() or request.service.lower() in anom.metric_name.lower():
+                    anom.is_resolved = True
+            await db.commit()
+        except Exception as e:
+            logger.debug("Could not auto-resolve anomaly for executed action: %s", e)
+
     return FridayActionExecutionResponse(
         action_id=action_id,
         success=True,
@@ -263,3 +303,38 @@ async def execute_friday_action(
         executed_at=now_iso,
         details={"audit_logged": True, "tenant_id": biz_id},
     )
+
+
+@router.get("/history")
+async def get_friday_history(
+    conversation_id: Optional[str] = None,
+    current_user: User = Depends(get_current_user_and_business),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Retrieves stored conversational turns for the active conversation session:
+    1. Checks Redis fast session memory.
+    2. Falls back to PostgreSQL `conversations` table.
+    """
+    biz_id = str(current_user.business_id)
+    conv_id = _normalize_conversation_id(conversation_id, biz_id)
+
+    messages = await redis_service.get_session_memory(biz_id, conv_id)
+    if not messages and conversation_id and await is_db_available():
+        try:
+            conv_uuid = uuid.UUID(conv_id)
+            stmt = select(Conversation).where(
+                Conversation.id == conv_uuid,
+                Conversation.business_id == current_user.business_id,
+            )
+            conv_obj = (await db.execute(stmt)).scalars().first()
+            if conv_obj and conv_obj.messages:
+                messages = conv_obj.messages
+        except Exception as e:
+            logger.debug("Could not load previous conversation from DB: %s", e)
+
+    return {
+        "conversation_id": conv_id,
+        "messages": messages or [],
+    }
+

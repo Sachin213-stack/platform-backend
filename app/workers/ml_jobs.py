@@ -21,7 +21,7 @@ from app.core.logging import (
     set_correlation_id,
     set_business_id,
 )
-from app.db.session import AsyncSessionLocal, engine, is_db_available
+from app.db.session import AsyncSessionLocal, engine, is_db_available, set_rls_context
 from app.db.models.business import Business
 from app.db.models.telemetry import TelemetryEvent
 from app.db.models.ml import Anomaly, Forecast
@@ -41,6 +41,9 @@ async def detect_anomalies_for_business(business_id: uuid.UUID) -> int:
     lookback = now - timedelta(hours=2)
 
     async with AsyncSessionLocal() as session:
+        # Set tenant context for PostgreSQL Row-Level Security
+        await set_rls_context(session, str(business_id))
+
         # Fetch recent telemetry data
         stmt = (
             select(TelemetryEvent)
@@ -62,6 +65,14 @@ async def detect_anomalies_for_business(business_id: uuid.UUID) -> int:
             )
             return 0
 
+        # Query existing anomalies for this tenant in lookback window to prevent duplicate insertions
+        existing_stmt = select(Anomaly.detected_at, Anomaly.metric_name).where(
+            Anomaly.business_id == business_id,
+            Anomaly.detected_at >= lookback,
+        )
+        existing_rows = (await session.execute(existing_stmt)).all()
+        existing_keys = {(r[0], r[1]) for r in existing_rows}
+
         # Extract features for anomaly detection: [response_time_ms, cpu_usage_pct, memory_usage_pct]
         features = []
         valid_events = []
@@ -81,31 +92,71 @@ async def detect_anomalies_for_business(business_id: uuid.UUID) -> int:
         preds = iso.fit_predict(X)
 
         avg_latency = float(np.mean(X[:, 0]))
+        avg_cpu = float(np.mean(X[:, 1]))
+        avg_mem = float(np.mean(X[:, 2]))
         anomalies_created = 0
 
         for idx, pred in enumerate(preds):
             if pred == -1:  # Outlier detected
                 event = valid_events[idx]
-                actual_val = round(float(event.response_time_ms or 0.0), 1)
+                rt = round(float(event.response_time_ms or 0.0), 1)
+                cpu = round(float(event.cpu_usage_pct or 0.0), 1)
+                mem = round(float(event.memory_usage_pct or 0.0), 1)
 
-                # Skip if actual value is below average (only flag high latency)
-                if actual_val <= avg_latency * 1.25:
+                metric_name = None
+                severity = "medium"
+                expected_val = 0.0
+                actual_val = 0.0
+                description = ""
+
+                # 1. Latency outlier check (primary)
+                if rt > avg_latency * 1.25:
+                    metric_name = "response_time"
+                    severity = "critical" if rt > avg_latency * 2.5 else "high" if rt > avg_latency * 1.75 else "medium"
+                    expected_val = round(avg_latency, 1)
+                    actual_val = rt
+                    description = f"Automated IsolationForest detected response time outlier ({actual_val}ms vs baseline {expected_val}ms) on endpoint {event.endpoint or 'unknown'}"
+                # 2. CPU saturation outlier check
+                elif cpu > 75.0 and cpu > avg_cpu * 1.25:
+                    metric_name = "cpu_usage"
+                    severity = "critical" if cpu >= 90.0 else "high"
+                    expected_val = round(avg_cpu, 1)
+                    actual_val = cpu
+                    description = f"Automated IsolationForest detected CPU saturation outlier ({actual_val}% vs baseline {expected_val}%) on endpoint {event.endpoint or 'unknown'}"
+                # 3. Memory saturation outlier check
+                elif mem > 75.0 and mem > avg_mem * 1.25:
+                    metric_name = "memory_usage"
+                    severity = "critical" if mem >= 90.0 else "high"
+                    expected_val = round(avg_mem, 1)
+                    actual_val = mem
+                    description = f"Automated IsolationForest detected memory saturation outlier ({actual_val}% vs baseline {expected_val}%) on endpoint {event.endpoint or 'unknown'}"
+                elif rt > avg_latency:
+                    metric_name = "response_time"
+                    severity = "medium"
+                    expected_val = round(avg_latency, 1)
+                    actual_val = rt
+                    description = f"Automated IsolationForest detected latency deviation ({actual_val}ms vs baseline {expected_val}ms) on endpoint {event.endpoint or 'unknown'}"
+                else:
+                    # Low-latency / benign outlier, skip
                     continue
 
-                severity = "critical" if actual_val > avg_latency * 2.5 else "high" if actual_val > avg_latency * 1.75 else "medium"
-                
+                # Deduplication check: do not insert duplicate anomaly for same timestamp & metric
+                if (event.timestamp, metric_name) in existing_keys:
+                    continue
+
                 anomaly = Anomaly(
                     business_id=business_id,
-                    metric_name="response_time",
+                    metric_name=metric_name,
                     severity=severity,
-                    expected_value=round(avg_latency, 1),
+                    expected_value=expected_val,
                     actual_value=actual_val,
                     confidence_score=0.92,
-                    description=f"Automated IsolationForest detected response time outlier ({actual_val}ms vs baseline {round(avg_latency, 1)}ms) on endpoint {event.endpoint or 'unknown'}",
+                    description=description,
                     is_resolved=False,
                     detected_at=event.timestamp,
                 )
                 session.add(anomaly)
+                existing_keys.add((event.timestamp, metric_name))
                 anomalies_created += 1
 
         if anomalies_created > 0:
@@ -130,6 +181,8 @@ async def generate_forecast_for_business(business_id: uuid.UUID) -> Optional[For
     lookback = now - timedelta(days=3)
 
     async with AsyncSessionLocal() as session:
+        # Set tenant context for PostgreSQL Row-Level Security
+        await set_rls_context(session, str(business_id))
         stmt = (
             select(
                 func.date_trunc("hour", TelemetryEvent.timestamp).label("hour"),
@@ -191,15 +244,20 @@ async def generate_forecast_for_business(business_id: uuid.UUID) -> Optional[For
 
 
 async def enforce_retention_for_business(business: Business) -> int:
-    """Deletes telemetry events that exceed the business tenant's retention window."""
+    """Deletes telemetry events, old forecasts, and resolved anomalies that exceed the retention window."""
     if not await is_db_available():
         logger.debug("Database offline: skipping telemetry retention enforcement for tenant %s", business.id)
         return 0
 
     retention_days = business.retention_days or 30
     cutoff = datetime.now(timezone.utc) - timedelta(days=retention_days)
+    forecast_cutoff = datetime.now(timezone.utc) - timedelta(days=7)
 
     async with AsyncSessionLocal() as session:
+        # Set tenant context for PostgreSQL Row-Level Security
+        await set_rls_context(session, str(business.id))
+
+        # 1. Purge expired telemetry events
         stmt = (
             delete(TelemetryEvent)
             .where(
@@ -208,8 +266,30 @@ async def enforce_retention_for_business(business: Business) -> int:
             )
         )
         result = await session.execute(stmt)
-        await session.commit()
         deleted_count = result.rowcount or 0
+
+        # 2. Purge forecasts older than 7 days
+        fc_stmt = (
+            delete(Forecast)
+            .where(
+                Forecast.business_id == business.id,
+                Forecast.generated_at < forecast_cutoff,
+            )
+        )
+        await session.execute(fc_stmt)
+
+        # 3. Purge resolved anomalies older than retention period
+        anom_stmt = (
+            delete(Anomaly)
+            .where(
+                Anomaly.business_id == business.id,
+                Anomaly.detected_at < cutoff,
+                Anomaly.is_resolved.is_(True),
+            )
+        )
+        await session.execute(anom_stmt)
+
+        await session.commit()
         return deleted_count
 
 
@@ -407,11 +487,12 @@ async def run_retention_enforcement_job() -> None:
 
 
 class MLWorker:
-    """Standalone background scheduler worker for ML jobs."""
+    """Standalone or embedded background scheduler worker for ML jobs."""
 
-    def __init__(self) -> None:
+    def __init__(self, embedded: bool = False) -> None:
         self.scheduler = AsyncIOScheduler()
         self.is_running = True
+        self.embedded = embedded
 
     def stop(self) -> None:
         logger.info("Received termination signal, shutting down ML jobs worker gracefully...")
@@ -420,6 +501,8 @@ class MLWorker:
             self.scheduler.shutdown(wait=False)
 
     def _register_signal_handlers(self) -> None:
+        if self.embedded:
+            return
         loop = asyncio.get_running_loop()
         try:
             for sig in (signal.SIGINT, signal.SIGTERM):
@@ -429,10 +512,11 @@ class MLWorker:
 
     async def run(self) -> None:
         setup_logging()
-        logger.info("Starting AI-CTO Background ML Jobs Worker...")
+        logger.info("Starting AI-CTO Background ML Jobs Worker (embedded=%s)...", self.embedded)
 
         self._register_signal_handlers()
-        await redis_service.connect()
+        if not self.embedded:
+            await redis_service.connect()
 
         # Schedule jobs
         # 1. Anomaly detection every 60 seconds
@@ -466,14 +550,15 @@ class MLWorker:
         while self.is_running:
             await asyncio.sleep(1.0)
 
-        logger.info("Cleaning up resources on ML jobs worker exit...")
-        await redis_service.disconnect()
-        await engine.dispose()
+        if not self.embedded:
+            logger.info("Cleaning up resources on standalone ML jobs worker exit...")
+            await redis_service.disconnect()
+            await engine.dispose()
         logger.info("ML jobs worker shutdown complete.")
 
 
 def main():
-    worker = MLWorker()
+    worker = MLWorker(embedded=False)
     try:
         asyncio.run(worker.run())
     except (KeyboardInterrupt, SystemExit):

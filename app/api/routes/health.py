@@ -1,6 +1,6 @@
 import time
 import httpx
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import text
 
@@ -14,12 +14,13 @@ router = APIRouter(prefix="/health", tags=["Observability"])
 
 
 @router.get("", response_model=HealthResponse)
-async def check_health(db: AsyncSession = Depends(get_db)):
+async def check_health(request: Request, db: AsyncSession = Depends(get_db)):
     """
     Comprehensive diagnostic health probe checking:
     1. PostgreSQL connection & read latency
     2. Redis connection & ping latency
     3. Kimi (Moonshot AI) upstream accessibility
+    4. Background Workers (MLWorker & IngestionWorker)
     """
     services = {}
     overall_healthy = True
@@ -105,6 +106,37 @@ async def check_health(db: AsyncSession = Depends(get_db)):
         services["kimi_llm"] = ServiceStatus(
             status="degraded",
             message="Kimi API key unconfigured (set KIMI_API_KEY in .env)",
+        )
+
+    # 4. Check Background Workers
+    worker_task = getattr(request.app.state, "worker_task", None) if hasattr(request, "app") and hasattr(request.app, "state") else None
+    if worker_task and not worker_task.done():
+        services["ml_worker"] = ServiceStatus(
+            status="healthy",
+            message="Background ML scheduler active (anomaly: 60s, forecast: 5m, retention: 1h)",
+        )
+    elif hasattr(request, "app") and getattr(request.app.state, "worker_started_successfully", False) and worker_task and worker_task.done():
+        exc = worker_task.exception() if not worker_task.cancelled() else "cancelled"
+        services["ml_worker"] = ServiceStatus(
+            status="unhealthy",
+            message=f"MLWorker background task crashed: {exc}",
+        )
+    else:
+        services["ml_worker"] = ServiceStatus(
+            status="degraded",
+            message="MLWorker not running or idle",
+        )
+
+    ingestion_task = getattr(request.app.state, "ingestion_task", None) if hasattr(request, "app") and hasattr(request.app, "state") else None
+    if ingestion_task and not ingestion_task.done():
+        services["ingestion_worker"] = ServiceStatus(
+            status="healthy",
+            message="Telemetry stream batch processor active",
+        )
+    else:
+        services["ingestion_worker"] = ServiceStatus(
+            status="degraded",
+            message="Telemetry ingestion worker not running or idle",
         )
 
     return HealthResponse(

@@ -142,6 +142,11 @@ class IngestionService:
             elif parsed_records:
                 logger.debug("Database offline: buffered %d telemetry events in memory", len(parsed_records))
 
+            # Invalidate dashboard metrics cache so UI updates immediately
+            biz_ids = {str(r["business_id"]) for r in parsed_records if "business_id" in r}
+            for bid in biz_ids:
+                await redis_service.invalidate_cache_pattern(f"dashboard:metrics:{bid}")
+
             logger.info(
                 "Ingestion worker %s batch: processed %d events in %.2fms (in-memory buffer, acked %d)",
                 self.consumer_name,
@@ -209,6 +214,11 @@ class IngestionService:
                     await redis_service.redis.xack(self.stream_key, self.group_name, *ack_ids)
                 except Exception as ack_err:
                     logger.error("Failed to XACK stream entries in %s: %s", self.stream_key, ack_err, exc_info=True)
+
+            # Invalidate dashboard metrics cache so UI updates immediately
+            biz_ids = {str(r["business_id"]) for r in parsed_records if "business_id" in r}
+            for bid in biz_ids:
+                await redis_service.invalidate_cache_pattern(f"dashboard:metrics:{bid}")
 
             logger.info(
                 "Ingestion worker %s batch: inserted %d events to Postgres in %.2fms (acknowledged %d stream events)",

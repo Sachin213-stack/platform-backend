@@ -10,7 +10,7 @@ from sqlalchemy import select, func, desc
 from app.core.config import settings
 from app.core.logging import logger
 from app.services.redis_service import redis_service
-from app.db.session import AsyncSessionLocal, is_db_available
+from app.db.session import AsyncSessionLocal, is_db_available, set_rls_context
 from app.db.models.telemetry import TelemetryEvent
 from app.db.models.ml import Anomaly, Forecast
 from app.db.models.alerts import AlertRule
@@ -197,6 +197,9 @@ class LLMAdapter:
             import uuid
             biz_uuid = uuid.UUID(business_id)
             async with AsyncSessionLocal() as session:
+                # Set tenant context for PostgreSQL Row-Level Security (RLS)
+                await set_rls_context(session, str(business_id))
+
                 # 1. Fetch Business metadata
                 biz_stmt = select(Business).where(Business.id == biz_uuid)
                 biz_obj = (await session.execute(biz_stmt)).scalars().first()
@@ -306,12 +309,21 @@ class LLMAdapter:
         elif tool_name == "get_capacity_forecast":
             horizon = arguments.get("horizon", "24h")
             ctx = await self.get_live_business_context(business_id)
+            crash_risk = ctx.get("crash_risk_pct", 4.2)
+            runway_days = max(7, min(90, int(45 - crash_risk * 0.4)))
+            multiplier = round(max(1.4, 4.0 - (crash_risk / 25.0)), 1)
+            rec = "Sufficient headroom for baseline traffic. Monitor Redis session pool."
+            if crash_risk > 50:
+                rec = "CRITICAL: High crash risk projected under current traffic growth. Immediately autoscale pod pool and apply memory limits."
+            elif crash_risk > 20:
+                rec = "MODERATE: Elevated concurrency detected. Proactively scale ingress gateways to 6 replicas."
+
             return {
                 "horizon": horizon,
-                "crash_risk_pct": ctx.get("crash_risk_pct", 4.2),
-                "resource_runway_days": 18,
-                "peak_multiplier_capacity": 3.4,
-                "recommendation": "Sufficient headroom for 3x baseline traffic. Monitor Redis session pool.",
+                "crash_risk_pct": crash_risk,
+                "resource_runway_days": runway_days,
+                "peak_multiplier_capacity": multiplier,
+                "recommendation": rec,
             }
 
         elif tool_name == "propose_mitigation_action":
@@ -387,7 +399,7 @@ class LLMAdapter:
         if tools:
             payload["tools"] = tools
 
-        timeout_sec = float(getattr(settings, "KIMI_TIMEOUT_SECONDS", 30.0))
+        timeout_sec = min(10.0, float(getattr(settings, "KIMI_TIMEOUT_SECONDS", 10.0)))
         start_time = time.perf_counter()
 
         try:
