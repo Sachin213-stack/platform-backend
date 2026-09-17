@@ -17,6 +17,16 @@ from app.services.llm_adapter import (
 
 class TestFridayKimiIntegration(unittest.TestCase):
 
+    @classmethod
+    def tearDownClass(cls):
+        try:
+            if hasattr(app.state, "ml_worker") and app.state.ml_worker:
+                app.state.ml_worker.stop()
+            if hasattr(app.state, "ingestion_worker") and app.state.ingestion_worker:
+                app.state.ingestion_worker.stop()
+        except Exception:
+            pass
+
     def setUp(self):
         self.client = TestClient(app)
         from app.core.security import create_access_token
@@ -46,7 +56,7 @@ class TestFridayKimiIntegration(unittest.TestCase):
         # Mock successful LLM call
         mock_res = {
             "content": "All clusters operating nominally under Kimi K3 analysis.",
-            "model": "kimi-k3",
+            "model": "moonshotai/kimi-k3",
             "usage": {"total_tokens": 85},
             "suggested_actions": [],
             "cached": False,
@@ -66,7 +76,7 @@ class TestFridayKimiIntegration(unittest.TestCase):
             data = resp.json()
             # conversation_id must be a valid UUID
             uuid.UUID(data["conversation_id"])
-            self.assertEqual(data["model_used"], "kimi-k3")
+            self.assertEqual(data["model_used"], "moonshotai/kimi-k3")
             self.assertEqual(data["response"], mock_res["content"])
 
     def test_kimi_tool_execution(self):
@@ -114,11 +124,15 @@ class TestFridayKimiIntegration(unittest.TestCase):
 
     def test_health_probe_reports_kimi_status(self):
         """Verify that health check reports 'kimi_llm' service status."""
-        resp = self.client.get("/api/health")
-        self.assertEqual(resp.status_code, 200)
-        data = resp.json()
-        self.assertIn("kimi_llm", data["services"])
-        self.assertNotIn("nvidia_nim", data["services"])
+        mock_resp = MagicMock()
+        mock_resp.status_code = 200
+        with patch("httpx.AsyncClient.get", new_callable=AsyncMock) as mock_get:
+            mock_get.return_value = mock_resp
+            resp = self.client.get("/api/health")
+            self.assertEqual(resp.status_code, 200)
+            data = resp.json()
+            self.assertIn("kimi_llm", data["services"])
+            self.assertNotIn("nvidia_nim", data["services"])
 
 if __name__ == "__main__":
     unittest.main()

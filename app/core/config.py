@@ -91,18 +91,21 @@ class Settings(BaseSettings):
 
     # Kimi (Moonshot AI) LLM Configuration (Sole LLM Provider via NVIDIA NIM)
     KIMI_API_KEY: str = ""
+    NVIDIA_API_KEY: str = ""
     MOONSHOT_API_KEY: str = ""
     KIMI_BASE_URL: str = "https://integrate.api.nvidia.com/v1"
     KIMI_MODEL_PRIMARY: str = "moonshotai/kimi-k3"
-    KIMI_MODEL_SECONDARY: str = "meta/llama-3.2-11b-vision-instruct"
-    KIMI_MODEL_FALLBACK: str = "nvidia/nemotron-3.5-lightning-30b-a3b"
-    KIMI_TIMEOUT_SECONDS: float = 30.0
+    KIMI_MODEL_SECONDARY: str = "moonshotai/kimi-k3"
+    KIMI_MODEL_FALLBACK: str = "moonshotai/kimi-k3"
+    KIMI_TIMEOUT_SECONDS: float = 180.0
 
     @property
     def effective_kimi_api_key(self) -> str:
-        """Returns the configured Kimi API key from KIMI_API_KEY, MOONSHOT_API_KEY, or env."""
+        """Returns the configured Kimi / NVIDIA API key."""
         key = (
             self.KIMI_API_KEY
+            or self.NVIDIA_API_KEY
+            or os.getenv("NVIDIA_API_KEY", "")
             or self.MOONSHOT_API_KEY
             or os.getenv("KIMI_API_KEY", "")
             or os.getenv("MOONSHOT_API_KEY", "")

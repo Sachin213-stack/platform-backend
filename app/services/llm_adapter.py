@@ -96,34 +96,23 @@ KIMI_TOOLS = [
 ]
 
 
-def normalize_model_id(model: str | None) -> str:
-    """Normalizes any model identifier or alias into a valid NVIDIA NIM model identifier."""
-    if not model:
-        return (settings.KIMI_MODEL_PRIMARY or "moonshotai/kimi-k3").strip('"\'')
-    m = model.strip().strip('"\'')
-    alias_map = {
-        "kimi-k3": "moonshotai/kimi-k3",
-        "kimi-k2.6": "moonshotai/kimi-k3",
-        "kimi": "moonshotai/kimi-k3",
-        "moonshot-v1-128k": "meta/llama-3.2-11b-vision-instruct",
-        "llama-3.2-11b": "meta/llama-3.2-11b-vision-instruct",
-        "nemotron-3.5": "nvidia/nemotron-3.5-lightning-30b-a3b",
-    }
-    return alias_map.get(m, m)
+def normalize_model_id(model: str | None = None) -> str:
+    """Strictly enforces the Moonshot AI Kimi K3 model from NVIDIA NIM."""
+    return "moonshotai/kimi-k3"
 
 
 class LLMAdapter:
     """
-    Production-grade LLM adapter for FRIDAY AI-CTO powered solely by Kimi (Moonshot AI):
-    - Kimi model priority fallback chain (moonshotai/kimi-k3 -> meta/llama-3.2-11b-vision-instruct -> nvidia/nemotron-3.5-lightning-30b-a3b)
+    Production-grade LLM adapter for FRIDAY AI-CTO powered exclusively by Kimi K3 (Moonshot AI) via NVIDIA NIM:
+    - Dedicated NVIDIA NIM endpoint (moonshotai/kimi-k3) with 16,384 max tokens & reasoning_effort="max"
     - Native OpenAI-compatible tool use / function calling for live ops queries and action proposals
     - Real-time Server-Sent Events (SSE) streaming support
-    - Half-open circuit breaker (Redis-backed cooldown + single probe interval per model tier)
-    - Automatic PII redaction (emails, cards, secrets, tokens)
+    - Half-open circuit breaker (Redis-backed cooldown + probe interval)
+    - Automatic PII redaction (emails, cards, secrets, tokens) supporting text and multimodal payloads
     - Grounded live business telemetry, anomaly, and widget context injection
     - Context window limits management with sliding-window summarization
     - Response caching for identical recent queries (TTL 60s)
-    - Loud failure when KIMI_API_KEY is missing/invalid (no silent mock fallback)
+    - Loud failure when KIMI_API_KEY / NVIDIA_API_KEY is missing/invalid (no silent mock fallback)
     """
 
     def __init__(self) -> None:
@@ -131,48 +120,43 @@ class LLMAdapter:
 
     @property
     def endpoints(self) -> List[Dict[str, Any]]:
-        """Returns Kimi model tiers in priority fallback order."""
+        """Returns the Moonshot AI Kimi K3 model endpoint via NVIDIA NIM."""
         api_key = settings.effective_kimi_api_key
         raw_base = (settings.KIMI_BASE_URL or "https://integrate.api.nvidia.com/v1").rstrip("/")
         base_url = raw_base[:-17] if raw_base.endswith("/chat/completions") else raw_base
         return [
             {
-                "id": "kimi-tier-1-primary",
+                "id": "kimi-k3-nvidia-nim",
                 "base_url": base_url,
                 "api_key": api_key,
-                "model": normalize_model_id(settings.KIMI_MODEL_PRIMARY),
+                "model": "moonshotai/kimi-k3",
                 "context_window": 1000000,
-                "tier_name": "Kimi K3 (Moonshot AI)",
-            },
-            {
-                "id": "kimi-tier-2-secondary",
-                "base_url": base_url,
-                "api_key": api_key,
-                "model": normalize_model_id(settings.KIMI_MODEL_SECONDARY),
-                "context_window": 128000,
-                "tier_name": "Llama 3.2 11B (Fast Ops)",
-            },
-            {
-                "id": "kimi-tier-3-fallback",
-                "base_url": base_url,
-                "api_key": api_key,
-                "model": normalize_model_id(settings.KIMI_MODEL_FALLBACK),
-                "context_window": 128000,
-                "tier_name": "Nemotron 3.5 Lightning (Fallback)",
+                "tier_name": "Kimi K3 (Moonshot AI via NVIDIA NIM)",
             },
         ]
 
-    def scrub_pii(self, text: str) -> str:
-        """Sanitizes PII and credentials prior to external LLM dispatch."""
-        if not text:
-            return ""
-        # Scrub emails
-        text = re.sub(r"[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+", "[EMAIL_REDACTED]", text)
-        # Scrub credit cards (13-16 digits)
-        text = re.sub(r"\b(?:\d[ -]*?){13,16}\b", "[CARD_REDACTED]", text)
-        # Scrub auth tokens and API keys
-        text = re.sub(r"(?i)(bearer|token|key|secret|password)[\s:=]+([a-zA-Z0-9_\-\.]{12,})", r"\1 [REDACTED]", text)
-        return text
+    def scrub_pii(self, content: Any) -> Any:
+        """Sanitizes PII and credentials prior to external LLM dispatch (supports string or multimodal content)."""
+        if not content:
+            return "" if isinstance(content, str) else content
+        if isinstance(content, str):
+            text = content
+            # Scrub emails
+            text = re.sub(r"[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+", "[EMAIL_REDACTED]", text)
+            # Scrub credit cards (13-16 digits)
+            text = re.sub(r"\b(?:\d[ -]*?){13,16}\b", "[CARD_REDACTED]", text)
+            # Scrub auth tokens and API keys
+            text = re.sub(r"(?i)(bearer|token|key|secret|password)[\s:=]+([a-zA-Z0-9_\-\.]{12,})", r"\1 [REDACTED]", text)
+            return text
+        elif isinstance(content, list):
+            scrubbed_parts = []
+            for part in content:
+                if isinstance(part, dict) and part.get("type") == "text":
+                    scrubbed_parts.append({**part, "text": self.scrub_pii(part.get("text", ""))})
+                else:
+                    scrubbed_parts.append(part)
+            return scrubbed_parts
+        return content
 
     async def get_live_business_context(self, business_id: str) -> Dict[str, Any]:
         """Fetches live telemetry vitals, active anomalies, and alert rules to ground FRIDAY's analysis."""
@@ -346,8 +330,14 @@ class LLMAdapter:
 
     def _truncate_or_summarize_messages(self, messages: List[Dict[str, Any]], max_tokens_estimate: int = 16000) -> List[Dict[str, Any]]:
         """Maintains conversational sliding window and bounds token usage within Kimi's limits."""
-        # Approximate 1 token ~= 3.5 characters for mixed code/JSON/English
-        total_chars = sum(len(m.get("content") or "") for m in messages)
+        def _get_len(c: Any) -> int:
+            if isinstance(c, str):
+                return len(c)
+            elif isinstance(c, list):
+                return sum(len(p.get("text", "")) for p in c if isinstance(p, dict))
+            return 0
+
+        total_chars = sum(_get_len(m.get("content")) for m in messages)
         estimated_tokens = int(total_chars / 3.5)
 
         if estimated_tokens <= max_tokens_estimate or len(messages) <= 6:
@@ -360,9 +350,15 @@ class LLMAdapter:
         if len(turns) > 6:
             old_turns = turns[:-4]
             recent_turns = turns[-4:]
-            summary_snippet = "Earlier exchanges: " + " | ".join(
-                f"{t.get('role')}: {t.get('content')[:60]}..." for t in old_turns if t.get("content")
-            )
+            summary_parts = []
+            for t in old_turns:
+                c = t.get("content")
+                if isinstance(c, str):
+                    summary_parts.append(f"{t.get('role')}: {c[:60]}...")
+                elif isinstance(c, list):
+                    txt = next((p.get("text", "") for p in c if isinstance(p, dict) and p.get("type") == "text"), "")
+                    summary_parts.append(f"{t.get('role')}: {txt[:60]}...")
+            summary_snippet = "Earlier exchanges: " + " | ".join(summary_parts)
             summary_msg = {"role": "system", "content": f"[Conversation History Summary: {summary_snippet}]"}
             new_msgs = [system_msg, summary_msg] + recent_turns if system_msg else [summary_msg] + recent_turns
             return new_msgs
@@ -374,42 +370,45 @@ class LLMAdapter:
         endpoint_config: Dict[str, Any],
         messages: List[Dict[str, Any]],
         tools: Optional[List[Dict[str, Any]]] = None,
-        temperature: float = 0.3,
+        temperature: float = 1.0,
     ) -> Dict[str, Any]:
-        """Performs async authenticated HTTP POST to Kimi (Moonshot AI) chat completions endpoint."""
+        """Performs async authenticated HTTP POST to Kimi (Moonshot AI) chat completions endpoint via NVIDIA NIM."""
         api_key = endpoint_config["api_key"]
         if not api_key:
             raise KimiAuthenticationError(
-                "Kimi API key is not configured. Please set KIMI_API_KEY (or MOONSHOT_API_KEY) in .env or your environment variables."
+                "Kimi API key is not configured. Please set KIMI_API_KEY (or NVIDIA_API_KEY) in .env or your environment variables."
             )
 
         url = f"{endpoint_config['base_url'].rstrip('/')}/chat/completions"
         headers = {
             "Authorization": f"Bearer {api_key}",
             "Content-Type": "application/json",
+            "Accept": "application/json",
         }
 
         payload: Dict[str, Any] = {
-            "model": endpoint_config["model"],
+            "model": "moonshotai/kimi-k3",
             "messages": messages,
-            "temperature": temperature,
-            "max_tokens": 2048,
+            "max_tokens": 16384,
+            "seed": 0,
+            "temperature": 1,
+            "reasoning_effort": "max",
         }
 
         if tools:
             payload["tools"] = tools
 
-        timeout_sec = min(10.0, float(getattr(settings, "KIMI_TIMEOUT_SECONDS", 10.0)))
+        timeout_sec = float(getattr(settings, "KIMI_TIMEOUT_SECONDS", 180.0))
         start_time = time.perf_counter()
 
         try:
-            async with httpx.AsyncClient(timeout=timeout_sec) as client:
+            async with httpx.AsyncClient(timeout=httpx.Timeout(timeout_sec, connect=15.0)) as client:
                 resp = await client.post(url, json=payload, headers=headers)
                 latency_ms = (time.perf_counter() - start_time) * 1000
 
                 if resp.status_code in [401, 403]:
                     logger.error(
-                        "Kimi API authentication failed (HTTP %d): %s. Check KIMI_API_KEY.",
+                        "Kimi API authentication failed (HTTP %d): %s. Check KIMI_API_KEY / NVIDIA_API_KEY.",
                         resp.status_code,
                         resp.text[:140],
                     )
@@ -429,7 +428,7 @@ class LLMAdapter:
                 if resp.status_code in [400, 404]:
                     err_msg = resp.text[:140]
                     logger.warning(
-                        "Kimi model %s returned HTTP %d: %s (falling over to next model tier in chain)",
+                        "Kimi model %s returned HTTP %d: %s",
                         endpoint_config["model"],
                         resp.status_code,
                         err_msg,
@@ -449,7 +448,7 @@ class LLMAdapter:
                 return {
                     "content": choice["message"].get("content") or "",
                     "tool_calls": choice["message"].get("tool_calls"),
-                    "model": endpoint_config["model"],
+                    "model": "moonshotai/kimi-k3",
                     "tier_name": endpoint_config["tier_name"],
                     "usage": data.get("usage", {}),
                     "raw_message": choice["message"],
@@ -477,11 +476,11 @@ class LLMAdapter:
         inject_telemetry: bool = True,
         requested_model: Optional[str] = None,
         enable_tools: bool = True,
-        temperature: float = 0.3,
+        temperature: float = 1.0,
     ) -> Dict[str, Any]:
         """
-        Executes full generation through Kimi priority fallback chain with tool calling and context grounding.
-        Fails loudly if KIMI_API_KEY is missing/invalid or if all endpoints are exhausted.
+        Executes full generation through Moonshot AI Kimi K3 with tool calling and context grounding.
+        Fails loudly if KIMI_API_KEY is missing/invalid.
         """
         # 0. Validate that a key is configured
         api_key = settings.effective_kimi_api_key
@@ -494,7 +493,7 @@ class LLMAdapter:
         # 1. Check Query Cache for identical recent queries (TTL 60s)
         last_user_msg = messages[-1]["content"] if messages else ""
         cache_hash = hashlib.sha256(
-            f"{business_id}:{last_user_msg}:{requested_model or 'default'}:{json.dumps(context_hints or {}, sort_keys=True)}".encode()
+            f"{business_id}:{last_user_msg}:moonshotai/kimi-k3:{json.dumps(context_hints or {}, sort_keys=True)}".encode()
         ).hexdigest()
         cache_key = f"llm:kimi_query_cache:{cache_hash}"
 
@@ -507,7 +506,7 @@ class LLMAdapter:
         # 2. Build Grounded Telemetry & Business Context
         full_system_prompt = system_prompt or (
             "You are FRIDAY, the principal AI-CTO and autonomous operations assistant for this enterprise digital platform. "
-            "You are powered by Moonshot AI's Kimi neural engine. "
+            "You are powered exclusively by Moonshot AI's Kimi K3 neural engine via NVIDIA NIM. "
             "Provide precise, highly technical, and actionable infrastructure diagnostics. "
             "When diagnosing issues or recommending actions, ground your reasoning in the live telemetry and anomaly vitals provided."
         )
@@ -536,25 +535,8 @@ class LLMAdapter:
         # Apply context-window bounds & sliding-window summarization
         scrubbed_messages = self._truncate_or_summarize_messages(scrubbed_messages)
 
-        # 4. Prepare endpoints fallback chain
+        # 4. Prepare endpoints (strictly moonshotai/kimi-k3 via NVIDIA NIM)
         configured_endpoints = self.endpoints
-
-        if requested_model:
-            norm_model = normalize_model_id(requested_model)
-            matched = [ep for ep in configured_endpoints if ep["model"] == norm_model]
-            rest = [ep for ep in configured_endpoints if ep["model"] != norm_model]
-            if matched:
-                configured_endpoints = matched + rest
-            else:
-                custom_ep = {
-                    "id": f"kimi-custom-{norm_model}",
-                    "base_url": configured_endpoints[0]["base_url"],
-                    "api_key": configured_endpoints[0]["api_key"],
-                    "model": norm_model,
-                    "tier_name": f"Kimi ({norm_model})",
-                    "context_window": 128000,
-                }
-                configured_endpoints = [custom_ep] + configured_endpoints
 
         tools_to_pass = KIMI_TOOLS if enable_tools else None
         last_exception: Optional[Exception] = None
@@ -631,7 +613,7 @@ class LLMAdapter:
                 await redis_service.set_llm_cooldown(ep_id, duration_seconds=cooldown_dur)
 
         # If all tiers failed, FAIL LOUDLY — no silent mock fallback
-        err_msg = f"All Kimi (Moonshot AI) model tiers exhausted or failing in fallback chain: {last_exception}"
+        err_msg = f"Kimi K3 (Moonshot AI) endpoint failing: {last_exception}"
         logger.error(err_msg, exc_info=True)
         raise AllEndpointsExhaustedError(err_msg)
 
@@ -643,18 +625,21 @@ class LLMAdapter:
         context_hints: Optional[Dict[str, Any]] = None,
         inject_telemetry: bool = True,
         requested_model: Optional[str] = None,
-        temperature: float = 0.3,
+        temperature: float = 1.0,
     ) -> AsyncGenerator[str, None]:
         """
-        Streams token chunks from Kimi via Server-Sent Events (SSE).
+        Streams token chunks from Kimi K3 via Server-Sent Events (SSE).
         Yields lines of: data: {"token": "...", "model": "..."}\n\n
         """
         api_key = settings.effective_kimi_api_key
         if not api_key:
-            yield f"data: {json.dumps({'error': 'Kimi API key is not configured. Set KIMI_API_KEY in .env.'})}\n\n"
+            yield f"data: {json.dumps({'error': 'Kimi API key is not configured. Set KIMI_API_KEY / NVIDIA_API_KEY in .env.'})}\n\n"
             return
 
-        full_system_prompt = system_prompt or "You are FRIDAY, AI-CTO for this system, powered by Kimi (Moonshot AI)."
+        full_system_prompt = system_prompt or (
+            "You are FRIDAY, the principal AI-CTO and autonomous operations assistant for this enterprise digital platform. "
+            "You are powered exclusively by Moonshot AI's Kimi K3 neural engine via NVIDIA NIM."
+        )
         if inject_telemetry:
             biz_ctx = await self.get_live_business_context(business_id)
             full_system_prompt += f"\n\nLIVE SYSTEM VITALS:\n{json.dumps(biz_ctx, indent=2)}\n"
@@ -674,28 +659,27 @@ class LLMAdapter:
         scrubbed_messages = self._truncate_or_summarize_messages(scrubbed_messages)
         configured_endpoints = self.endpoints
 
-        if requested_model:
-            norm_model = normalize_model_id(requested_model)
-            matched = [ep for ep in configured_endpoints if ep["model"] == norm_model]
-            rest = [ep for ep in configured_endpoints if ep["model"] != norm_model]
-            configured_endpoints = matched + rest if matched else configured_endpoints
+        timeout_sec = float(getattr(settings, "KIMI_TIMEOUT_SECONDS", 180.0))
 
         for ep in configured_endpoints:
             url = f"{ep['base_url'].rstrip('/')}/chat/completions"
             headers = {
                 "Authorization": f"Bearer {api_key}",
                 "Content-Type": "application/json",
+                "Accept": "text/event-stream",
             }
             payload = {
-                "model": ep["model"],
+                "model": "moonshotai/kimi-k3",
                 "messages": scrubbed_messages,
-                "temperature": temperature,
-                "max_tokens": 2048,
+                "max_tokens": 16384,
+                "seed": 0,
                 "stream": True,
+                "temperature": 1,
+                "reasoning_effort": "max",
             }
 
             try:
-                async with httpx.AsyncClient(timeout=float(getattr(settings, "KIMI_TIMEOUT_SECONDS", 30.0))) as client:
+                async with httpx.AsyncClient(timeout=httpx.Timeout(timeout_sec, connect=15.0)) as client:
                     async with client.stream("POST", url, json=payload, headers=headers) as response:
                         if response.status_code != 200:
                             err_body = await response.aread()
@@ -707,7 +691,7 @@ class LLMAdapter:
                                 continue
                             data_str = line[5:].strip()
                             if data_str == "[DONE]":
-                                yield f"data: {json.dumps({'done': True, 'model': ep['model']})}\n\n"
+                                yield f"data: {json.dumps({'done': True, 'model': 'moonshotai/kimi-k3'})}\n\n"
                                 return
 
                             try:
@@ -715,15 +699,15 @@ class LLMAdapter:
                                 delta = chunk["choices"][0]["delta"]
                                 content_token = delta.get("content")
                                 if content_token:
-                                    yield f"data: {json.dumps({'token': content_token, 'model': ep['model']})}\n\n"
+                                    yield f"data: {json.dumps({'token': content_token, 'model': 'moonshotai/kimi-k3'})}\n\n"
                             except Exception:
                                 continue
                         return
 
             except Exception as e:
-                logger.warning("Streaming failed for model %s: %s (trying next tier)", ep["model"], e)
+                logger.warning("Streaming failed for model %s: %s", ep["model"], e)
 
-        yield f"data: {json.dumps({'error': 'All Kimi stream tiers failed.'})}\n\n"
+        yield f"data: {json.dumps({'error': 'Kimi stream failed.'})}\n\n"
 
 
 llm_adapter = LLMAdapter()
