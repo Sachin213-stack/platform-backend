@@ -29,6 +29,7 @@ from app.api.routes.dashboard import router as dashboard_router
 from app.api.routes.ingestion import router as ingestion_router
 from app.api.routes.friday import router as friday_router
 from app.api.routes.users import router as users_router
+from app.api.routes.logs import router as logs_router
 
 
 @asynccontextmanager
@@ -297,6 +298,7 @@ app.include_router(dashboard_router, prefix=settings.API_V1_STR)
 app.include_router(ingestion_router, prefix=settings.API_V1_STR)
 app.include_router(friday_router, prefix=settings.API_V1_STR)
 app.include_router(users_router, prefix=settings.API_V1_STR)
+app.include_router(logs_router, prefix=settings.API_V1_STR)
 
 # Also support /api/v1 routes
 # TODO: If settings.API_V1_STR is meant to be the canonical prefix going forward,
@@ -308,6 +310,8 @@ if settings.API_V1_STR != "/api/v1":
     app.include_router(ingestion_router, prefix="/api/v1")
     app.include_router(friday_router, prefix="/api/v1")
     app.include_router(users_router, prefix="/api/v1")
+    app.include_router(logs_router, prefix="/api/v1")
+
 
 
 @app.get("/")
