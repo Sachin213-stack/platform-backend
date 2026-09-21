@@ -41,15 +41,16 @@ class TestFridayKimiIntegration(unittest.TestCase):
         """Verify that missing KIMI_API_KEY returns HTTP 503 with explicit error message, not mock data."""
         with patch.object(settings, "KIMI_API_KEY", ""):
             with patch.object(settings, "MOONSHOT_API_KEY", ""):
-                with patch.dict("os.environ", {"KIMI_API_KEY": "", "MOONSHOT_API_KEY": ""}, clear=False):
-                    resp = self.client.post(
-                        "/api/friday/chat",
-                        json={"message": "What is our current crash risk?"},
-                        headers=self.auth_headers,
-                    )
-                    self.assertEqual(resp.status_code, 503)
-                    data = resp.json()
-                    self.assertIn("Kimi (Moonshot AI) API key is unconfigured or invalid", data["detail"])
+                with patch.object(settings, "NVIDIA_API_KEY", ""):
+                    with patch.dict("os.environ", {"KIMI_API_KEY": "", "MOONSHOT_API_KEY": "", "NVIDIA_API_KEY": ""}, clear=False):
+                        resp = self.client.post(
+                            "/api/friday/chat",
+                            json={"message": "What is our current crash risk?"},
+                            headers=self.auth_headers,
+                        )
+                        self.assertEqual(resp.status_code, 503)
+                        data = resp.json()
+                        self.assertIn("Kimi (Moonshot AI) API key is unconfigured or invalid", data["detail"])
 
     def test_conversation_id_normalization(self):
         """Verify that string conversation IDs like 'conv-default' don't cause HTTP 422."""
