@@ -376,6 +376,26 @@ class LLMAdapter:
             params = raw_params if isinstance(raw_params, dict) else {}
 
             rationale = str(arguments.get("rationale", "Automated mitigation requested by FRIDAY AI-CTO"))[:500]
+
+            # Multi-Metric Correlation Safety Check:
+            # If the tenant is experiencing high transaction velocity with nominal error rates,
+            # suppress destructive rate throttling and automatically override to proactive scale-out.
+            ctx = await self.get_live_business_context(business_id)
+            err_rate = float(ctx.get("error_rate_pct") or 0.0)
+            orders_min = float(ctx.get("orders_per_min") or 0.0)
+            if action_type == "throttle_rate_limits" and err_rate < 1.0 and orders_min >= 1.0:
+                logger.info(
+                    "Multi-metric correlation safety net: Suppressed rate throttling during healthy business surge (orders: %.1f/m, err: %.2f%%). Overriding to scale_service.",
+                    orders_min,
+                    err_rate,
+                )
+                action_type = "scale_service"
+                params = {"replicas": max(6, int(params.get("replicas", 6)))}
+                rationale = (
+                    f"Multi-metric correlation detected active business conversions ({orders_min} orders/min) with healthy error rate ({err_rate}%). "
+                    f"Rate throttling was safely overridden to proactive replica scaling to protect customer revenue."
+                )
+
             return {
                 "staged_action": True,
                 "action_id": f"act_{int(time.time())}_{hashlib.md5(service.encode()).hexdigest()[:6]}",

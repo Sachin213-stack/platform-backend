@@ -77,6 +77,7 @@ class Settings(BaseSettings):
     # Redis
     REDIS_URL: str = "redis://localhost:6379/0"
     REDIS_STREAM_KEY: str = "telemetry:events:stream"
+    REDIS_DLQ_STREAM_KEY: str = "telemetry:stream:dlq"
     REDIS_CONSUMER_GROUP: str = "telemetry_workers"
 
     # Security & Auth

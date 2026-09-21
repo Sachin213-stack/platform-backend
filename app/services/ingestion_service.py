@@ -95,6 +95,35 @@ class IngestionService:
             logger.error("Error parsing stream entry %s: %s", entry_id, e, exc_info=True)
             return None
 
+    async def route_to_dlq(self, entry_id: str, fields: Dict[str, Any], reason: str) -> None:
+        """
+        Diverts a malformed or poison-pill message to the Dead-Letter Queue (DLQ).
+        Prevents consumer worker crash loops while preserving unprocessable data for triage.
+        """
+        dlq_entry = {
+            "original_entry_id": str(entry_id),
+            "error_reason": str(reason)[:500],
+            "quarantined_at": datetime.now(timezone.utc).isoformat(),
+            "worker_consumer": self.consumer_name,
+            "raw_payload": json.dumps(fields) if isinstance(fields, dict) else str(fields),
+        }
+        if redis_service.redis:
+            try:
+                await redis_service.redis.xadd(settings.REDIS_DLQ_STREAM_KEY, dlq_entry)
+                logger.warning(
+                    "Quarantined poison-pill event %s to DLQ stream '%s' (Reason: %s)",
+                    entry_id,
+                    settings.REDIS_DLQ_STREAM_KEY,
+                    reason,
+                )
+            except Exception as e:
+                logger.error("Failed to write poison pill %s to DLQ: %s", entry_id, e)
+        else:
+            # In-memory DLQ buffer fallback
+            dlq_buf = redis_service._memory_streams.setdefault(settings.REDIS_DLQ_STREAM_KEY, [])
+            dlq_buf.append((entry_id, dlq_entry))
+            logger.warning("Quarantined poison-pill event %s to in-memory DLQ buffer (Reason: %s)", entry_id, reason)
+
     async def process_batch(self, batch_size: int = 100, block_ms: int = 2000) -> int:
         """
         Reads a batch of events from the stream, batch-inserts into Postgres,
@@ -113,10 +142,16 @@ class IngestionService:
             parsed_records: List[Dict[str, Any]] = []
             ack_ids: List[str] = []
             for entry_id, fields in entries_to_process:
-                record = self._parse_stream_entry(entry_id, fields)
-                if record:
-                    parsed_records.append(record)
-                ack_ids.append(entry_id)
+                try:
+                    record = self._parse_stream_entry(entry_id, fields)
+                    if record:
+                        parsed_records.append(record)
+                    else:
+                        await self.route_to_dlq(entry_id, fields, reason="Missing or invalid business_id in stream entry")
+                    ack_ids.append(entry_id)
+                except Exception as parse_err:
+                    await self.route_to_dlq(entry_id, fields, reason=f"Stream parsing exception: {parse_err}")
+                    ack_ids.append(entry_id)
 
             # Try DB batch insert if DB is online
             db_duration_ms = 0.0
@@ -177,10 +212,17 @@ class IngestionService:
             ack_ids: List[str] = []
 
             for entry_id, fields in entries:
-                record = self._parse_stream_entry(entry_id, fields)
-                if record:
-                    parsed_records.append(record)
-                ack_ids.append(entry_id)
+                try:
+                    record = self._parse_stream_entry(entry_id, fields)
+                    if record:
+                        parsed_records.append(record)
+                    else:
+                        await self.route_to_dlq(entry_id, fields, reason="Missing or invalid business_id in stream entry")
+                    ack_ids.append(entry_id)
+                except Exception as parse_err:
+                    logger.error("Failed to parse stream entry %s: %s", entry_id, parse_err)
+                    await self.route_to_dlq(entry_id, fields, reason=f"Stream parsing exception: {parse_err}")
+                    ack_ids.append(entry_id)
 
             # Batch insert to Postgres
             db_duration_ms = 0.0

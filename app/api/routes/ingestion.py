@@ -149,22 +149,41 @@ async def ingest_telemetry_event(
                 duplicate=True,
             )
 
-    # 6. Prepare sanitized payload for Redis Stream
+    # 6. Prepare sanitized payload for Redis Stream with Clamping Flags
     clean_endpoint = _sanitize_endpoint(event.endpoint)
+
+    raw_rt = float(event.response_time_ms or 0.0)
+    raw_cpu = float(event.cpu_usage_pct or 0.0)
+    raw_mem = float(event.memory_usage_pct or 0.0)
+
+    is_rt_clamped = raw_rt > 60000.0 or raw_rt < 0.0
+    is_cpu_clamped = raw_cpu > 100.0 or raw_cpu < 0.0
+    is_mem_clamped = raw_mem > 100.0 or raw_mem < 0.0
+
+    metadata = _sanitize_metadata(event.payload_metadata) if isinstance(event.payload_metadata, dict) else {}
+    if is_rt_clamped or is_cpu_clamped or is_mem_clamped:
+        metadata["clamping"] = {
+            "is_clamped": True,
+            "raw_response_time_ms": raw_rt,
+            "raw_cpu_usage_pct": raw_cpu,
+            "raw_memory_usage_pct": raw_mem,
+            "reason": "Exceeded safe operational numerical boundaries",
+        }
+
     event_payload = {
         "id": str(uuid.uuid4()),
         "business_id": business_id,
         "idempotency_key": event.idempotency_key or "",
         "event_type": event.event_type,
-        "response_time_ms": max(0.0, min(60000.0, float(event.response_time_ms or 0.0))),
+        "response_time_ms": max(0.0, min(60000.0, raw_rt)),
         "status_code": max(100, min(599, int(event.status_code or 200))),
         "orders_count": max(0, int(event.orders_count or 0)),
         "revenue_amount": max(0.0, float(event.revenue_amount or 0.0)),
-        "cpu_usage_pct": max(0.0, min(100.0, float(event.cpu_usage_pct or 0.0))),
-        "memory_usage_pct": max(0.0, min(100.0, float(event.memory_usage_pct or 0.0))),
+        "cpu_usage_pct": max(0.0, min(100.0, raw_cpu)),
+        "memory_usage_pct": max(0.0, min(100.0, raw_mem)),
         "queue_depth": max(0, int(event.queue_depth or 0)),
         "endpoint": clean_endpoint,
-        "payload_metadata": _sanitize_metadata(event.payload_metadata) if isinstance(event.payload_metadata, dict) else {},
+        "payload_metadata": metadata,
         "timestamp": (event.timestamp or datetime.now(timezone.utc)).isoformat(),
     }
 
@@ -186,3 +205,51 @@ async def ingest_telemetry_event(
         event_id=entry_id or event_payload["id"],
         duplicate=False,
     )
+
+
+@router.get("/dlq")
+async def get_dlq_events(
+    limit: int = 50,
+    authorization: Optional[str] = Header(None),
+):
+    """
+    Inspects quarantined Dead-Letter Queue (DLQ) telemetry events.
+    Requires Bearer token authentication with admin or owner privileges.
+    """
+    if not authorization or not authorization.startswith("Bearer "):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Authentication required to inspect Dead-Letter Queue.",
+        )
+    token = authorization.replace("Bearer ", "").strip()
+    payload = decode_token(token)
+    if not payload:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token.")
+
+    user_role = payload.get("role", "viewer")
+    if user_role not in ["owner", "admin"]:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Only admin or owner can inspect DLQ.")
+
+    dlq_events = []
+    if redis_service.redis:
+        try:
+            entries = await redis_service.redis.xrevrange(
+                settings.REDIS_DLQ_STREAM_KEY,
+                count=min(100, max(1, limit)),
+            )
+            for entry_id, fields in entries:
+                dlq_events.append({
+                    "entry_id": entry_id if isinstance(entry_id, str) else entry_id.decode(),
+                    "data": {
+                        (k if isinstance(k, str) else k.decode()): (v if isinstance(v, str) else v.decode())
+                        for k, v in fields.items()
+                    }
+                })
+        except Exception as e:
+            logger.error("Failed to read from Redis DLQ stream: %s", e)
+
+    return {
+        "dlq_stream": settings.REDIS_DLQ_STREAM_KEY,
+        "total_quarantined": len(dlq_events),
+        "events": dlq_events,
+    }

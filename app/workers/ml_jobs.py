@@ -140,6 +140,14 @@ async def detect_anomalies_for_business(business_id: uuid.UUID) -> int:
         avg_mem = float(np.mean(X[:, 2]))
         anomalies_created = 0
 
+        # Multi-Metric Correlation context: assess aggregate cluster health across this window
+        total_window_events = len(events)
+        error_events = sum(1 for e in events if (e.status_code or 200) >= 400)
+        window_error_rate = (error_events / max(1, total_window_events))
+        total_orders = sum((e.orders_count or 0) for e in events)
+        total_revenue = sum((e.revenue_amount or 0.0) for e in events)
+        is_healthy_surge_window = (window_error_rate < 0.015) and (total_orders > 0 or total_revenue > 0)
+
         for idx, pred in enumerate(preds):
             if pred == -1:  # Outlier detected
                 event = valid_events[idx]
@@ -183,6 +191,18 @@ async def detect_anomalies_for_business(business_id: uuid.UUID) -> int:
                 else:
                     # Low-latency / benign outlier, skip
                     continue
+
+                # Multi-Metric Correlation Adjustment:
+                # If transaction volume is high with healthy HTTP status and low cluster error rate,
+                # classify as a positive business surge (e.g. flash sale) rather than catastrophic failure.
+                is_event_healthy = (event.status_code or 200) < 400
+                is_transactional = (event.orders_count or 0) > 0 or is_healthy_surge_window
+                if is_event_healthy and is_transactional and window_error_rate < 0.02:
+                    if severity == "critical":
+                        severity = "medium"
+                    elif severity == "high":
+                        severity = "low"
+                    description += f" [MULTI-METRIC CORRELATION: Benign Traffic Surge - Nominal error rate ({window_error_rate*100:.1f}%) with active conversions. Rate throttling suppressed.]"
 
                 # Deduplication check: do not insert duplicate anomaly for same timestamp & metric
                 if (event.timestamp, metric_name) in existing_keys:
