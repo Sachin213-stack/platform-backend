@@ -13,6 +13,7 @@ class FridayChatRequest(BaseModel):
     message: str = Field(..., min_length=1, max_length=4000, description="User prompt, engineering query, or voice directive")
     mode: Optional[str] = Field("chat", description="chat or voice")
     model: Optional[str] = Field(None, max_length=64, description="Requested Kimi model tier (e.g. kimi-k3, kimi-k2.6, moonshot-v1-128k)")
+    reasoning_effort: Optional[Literal["low", "medium", "max"]] = Field("medium", description="Reasoning effort tier: low (fastest), medium (balanced), max (deep MoE reasoning)")
     context_hints: Optional[Dict[str, Any]] = Field(None, description="Dynamic widget or incident context (e.g. from Analytics or Dashboard)")
     stream: Optional[bool] = Field(False, description="Whether to request streaming response")
 

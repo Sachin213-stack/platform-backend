@@ -175,6 +175,7 @@ async def chat_with_friday(
             inject_telemetry=True,
             requested_model=request.model,
             enable_tools=True,
+            reasoning_effort=request.reasoning_effort,
         )
     except KimiAuthenticationError as e:
         logger.error("FRIDAY Kimi authentication failure: %s", e)
