@@ -65,26 +65,21 @@ async def get_dashboard_metrics(
     timeseries_points: List[TimeseriesPoint] = []
     tier_metrics: Dict[str, Any] = {}
 
+    is_demo = str(current_user.business_id) == "11111111-1111-1111-1111-111111111111"
+
     if await is_db_available():
         try:
-            # Query 24-hour performance aggregations
-            perf_stmt = select(
-                func.avg(TelemetryEvent.response_time_ms).label("avg_latency"),
-                func.count(TelemetryEvent.id).label("total_events"),
-                func.sum(TelemetryEvent.orders_count).label("total_orders"),
-                func.count(TelemetryEvent.id).filter(TelemetryEvent.status_code >= 400).label("error_events"),
-                func.avg(TelemetryEvent.cpu_usage_pct).label("avg_cpu"),
-                func.avg(TelemetryEvent.memory_usage_pct).label("avg_mem"),
-                func.avg(TelemetryEvent.queue_depth).label("avg_queue"),
-            ).where(
+            # Check for recent active telemetry received within the active recency window (last 15 minutes)
+            active_stmt = select(func.count(TelemetryEvent.id)).where(
                 TelemetryEvent.business_id == current_user.business_id,
-                TelemetryEvent.timestamp >= (now - timedelta(hours=24)),
+                TelemetryEvent.timestamp >= (now - timedelta(minutes=15)),
             )
-            perf_res = (await db.execute(perf_stmt)).first()
+            active_events_count = (await db.execute(active_stmt)).scalar() or 0
 
-            # If no events in the last 24h, check all-time stats for the business
-            if not perf_res or not perf_res.total_events:
-                perf_all_stmt = select(
+            # Live telemetry is only active if not demo tenant and events arrived in the last 15 minutes
+            if not is_demo and active_events_count > 0:
+                # Query 24-hour performance aggregations for active tenant
+                perf_stmt = select(
                     func.avg(TelemetryEvent.response_time_ms).label("avg_latency"),
                     func.count(TelemetryEvent.id).label("total_events"),
                     func.sum(TelemetryEvent.orders_count).label("total_orders"),
@@ -94,56 +89,87 @@ async def get_dashboard_metrics(
                     func.avg(TelemetryEvent.queue_depth).label("avg_queue"),
                 ).where(
                     TelemetryEvent.business_id == current_user.business_id,
+                    TelemetryEvent.timestamp >= (now - timedelta(hours=24)),
                 )
-                perf_res = (await db.execute(perf_all_stmt)).first()
+                perf_res = (await db.execute(perf_stmt)).first()
 
-            if perf_res and perf_res.total_events and int(perf_res.total_events) > 0:
-                has_live_data = True
-                total_events_count = int(perf_res.total_events)
-                if perf_res.avg_latency is not None:
-                    avg_latency = float(perf_res.avg_latency)
-                if perf_res.total_orders is not None:
-                    total_orders = int(perf_res.total_orders)
-                total_events = int(perf_res.total_events or 0)
-                error_events = int(perf_res.error_events or 0)
-                if total_events > 0:
-                    error_rate_pct = round((error_events / total_events) * 100, 2)
-                if perf_res.avg_cpu is not None:
-                    cpu_pct = round(float(perf_res.avg_cpu), 1)
-                if perf_res.avg_mem is not None:
-                    mem_pct = round(float(perf_res.avg_mem), 1)
-                if perf_res.avg_queue is not None:
-                    queue_depth = int(perf_res.avg_queue)
+                if perf_res and perf_res.total_events and int(perf_res.total_events) > 0:
+                    has_live_data = True
+                    total_events_count = int(perf_res.total_events)
+                    if perf_res.avg_latency is not None:
+                        avg_latency = float(perf_res.avg_latency)
+                    if perf_res.total_orders is not None:
+                        total_orders = int(perf_res.total_orders)
+                    total_events = int(perf_res.total_events or 0)
+                    error_events = int(perf_res.error_events or 0)
+                    if total_events > 0:
+                        error_rate_pct = round((error_events / total_events) * 100, 2)
+                    if perf_res.avg_cpu is not None:
+                        cpu_pct = round(float(perf_res.avg_cpu), 1)
+                    if perf_res.avg_mem is not None:
+                        mem_pct = round(float(perf_res.avg_mem), 1)
+                    if perf_res.avg_queue is not None:
+                        queue_depth = int(perf_res.avg_queue)
 
-            # Query real timeseries hourly buckets
-            if has_live_data:
-                ts_stmt = (
-                    select(
-                        func.date_trunc("hour", TelemetryEvent.timestamp).label("hour"),
-                        func.count(TelemetryEvent.id).label("req_count"),
-                        func.coalesce(func.sum(TelemetryEvent.revenue_amount), 0.0).label("revenue"),
-                        func.avg(TelemetryEvent.response_time_ms).label("avg_latency"),
-                        func.count(TelemetryEvent.id).filter(TelemetryEvent.status_code >= 400).label("error_count"),
-                    )
-                    .where(
-                        TelemetryEvent.business_id == current_user.business_id,
-                        TelemetryEvent.timestamp >= (now - timedelta(hours=24)),
-                    )
-                    .group_by("hour")
-                    .order_by("hour")
-                )
-                ts_res = (await db.execute(ts_stmt)).all()
-                for row in ts_res:
-                    err_pct = (row.error_count / row.req_count * 100.0) if row.req_count else 0.0
-                    timeseries_points.append(
-                        TimeseriesPoint(
-                            timestamp=row.hour.isoformat() if hasattr(row.hour, "isoformat") else str(row.hour),
-                            traffic=float(row.req_count),
-                            revenue=round(float(row.revenue), 2),
-                            response_time_ms=round(float(row.avg_latency or 0.0), 1),
-                            error_rate=round(float(err_pct), 2),
+                # Query real timeseries hourly buckets
+                if has_live_data:
+                    ts_stmt = (
+                        select(
+                            func.date_trunc("hour", TelemetryEvent.timestamp).label("hour"),
+                            func.count(TelemetryEvent.id).label("req_count"),
+                            func.coalesce(func.sum(TelemetryEvent.revenue_amount), 0.0).label("revenue"),
+                            func.avg(TelemetryEvent.response_time_ms).label("avg_latency"),
+                            func.count(TelemetryEvent.id).filter(TelemetryEvent.status_code >= 400).label("error_count"),
                         )
+                        .where(
+                            TelemetryEvent.business_id == current_user.business_id,
+                            TelemetryEvent.timestamp >= (now - timedelta(hours=24)),
+                        )
+                        .group_by("hour")
+                        .order_by("hour")
                     )
+                    ts_res = (await db.execute(ts_stmt)).all()
+                    for row in ts_res:
+                        err_pct = (row.error_count / row.req_count * 100.0) if row.req_count else 0.0
+                        timeseries_points.append(
+                            TimeseriesPoint(
+                                timestamp=row.hour.isoformat() if hasattr(row.hour, "isoformat") else str(row.hour),
+                                traffic=float(row.req_count),
+                                revenue=round(float(row.revenue), 2),
+                                response_time_ms=round(float(row.avg_latency or 0.0), 1),
+                                error_rate=round(float(err_pct), 2),
+                            )
+                        )
+
+                    # Recent live telemetry events
+                    tel_stmt = (
+                        select(TelemetryEvent)
+                        .where(TelemetryEvent.business_id == current_user.business_id)
+                        .order_by(desc(TelemetryEvent.timestamp))
+                        .limit(10)
+                    )
+                    tel_res = (await db.execute(tel_stmt)).scalars().all()
+                    for t in tel_res:
+                        status = t.status_code or 200
+                        lvl = "error" if status >= 500 else ("warn" if status >= 400 else "info")
+                        msg = ""
+                        if t.payload_metadata and isinstance(t.payload_metadata, dict):
+                            msg = t.payload_metadata.get("message") or t.payload_metadata.get("detail")
+                        if not msg:
+                            msg = f"HTTP {status} on {t.endpoint or '/'}" if t.endpoint else f"{t.event_type.upper()} processed"
+
+                        recent_telemetry_items.append(
+                            TelemetryEventItem(
+                                id=str(t.id),
+                                event_type=t.event_type.upper(),
+                                endpoint=t.endpoint,
+                                response_time_ms=round(t.response_time_ms, 1) if t.response_time_ms is not None else 0.0,
+                                status_code=status,
+                                timestamp=t.timestamp,
+                                message=msg,
+                                level=lvl,
+                            )
+                        )
 
             # Recent anomalies (from MLWorker or injected incidents)
             anom_stmt = (
@@ -163,36 +189,6 @@ async def get_dashboard_metrics(
                         actual_value=a.actual_value,
                         description=a.description,
                         detected_at=a.detected_at,
-                    )
-                )
-
-            # Recent live telemetry events
-            tel_stmt = (
-                select(TelemetryEvent)
-                .where(TelemetryEvent.business_id == current_user.business_id)
-                .order_by(desc(TelemetryEvent.timestamp))
-                .limit(10)
-            )
-            tel_res = (await db.execute(tel_stmt)).scalars().all()
-            for t in tel_res:
-                status = t.status_code or 200
-                lvl = "error" if status >= 500 else ("warn" if status >= 400 else "info")
-                msg = ""
-                if t.payload_metadata and isinstance(t.payload_metadata, dict):
-                    msg = t.payload_metadata.get("message") or t.payload_metadata.get("detail")
-                if not msg:
-                    msg = f"HTTP {status} on {t.endpoint or '/'}" if t.endpoint else f"{t.event_type.upper()} processed"
-
-                recent_telemetry_items.append(
-                    TelemetryEventItem(
-                        id=str(t.id),
-                        event_type=t.event_type.upper(),
-                        endpoint=t.endpoint,
-                        response_time_ms=round(t.response_time_ms, 1) if t.response_time_ms is not None else 0.0,
-                        status_code=status,
-                        timestamp=t.timestamp,
-                        message=msg,
-                        level=lvl,
                     )
                 )
         except Exception as e:
@@ -311,6 +307,15 @@ async def get_analytics_summary(
 
     if await is_db_available():
         try:
+            is_demo = str(current_user.business_id) == "11111111-1111-1111-1111-111111111111"
+            active_stmt = select(func.count(TelemetryEvent.id)).where(
+                TelemetryEvent.business_id == current_user.business_id,
+                TelemetryEvent.timestamp >= (now - timedelta(minutes=15)),
+            )
+            active_events_count = (await db.execute(active_stmt)).scalar() or 0
+            if not is_demo and active_events_count > 0:
+                has_live_data = True
+
             # 1. Query latest forecast from MLWorker (or trigger on-demand fit)
             fc_stmt = (
                 select(Forecast)
@@ -327,7 +332,6 @@ async def get_analytics_summary(
                     logger.debug("On-demand forecast fit failed: %s", e)
 
             if fc:
-                has_live_data = True
                 forecast_curve = fc.forecast_curve or {}
                 if fc.crash_risk_pct is not None:
                     crash_risk_pct = round(float(fc.crash_risk_pct), 1)
@@ -349,7 +353,6 @@ async def get_analytics_summary(
                     logger.debug("On-demand anomaly detection failed: %s", e)
 
             if anoms:
-                has_live_data = True
                 active_anoms = [a for a in anoms if not a.is_resolved]
                 base_score = 3.8
                 for a in active_anoms:
@@ -393,7 +396,6 @@ async def get_analytics_summary(
             )
             ev_count = (await db.execute(events_count_stmt)).scalar() or 0
             if ev_count > 50:
-                has_live_data = True
                 # Realistic runway estimate based on volume
                 runway_days = max(7, min(90, int(3500 / max(1, ev_count / 7))))
                 growth_rate_pct = round(min(25.0, (ev_count / 100) * 1.5), 1)
