@@ -58,6 +58,14 @@ async def lifespan(app: FastAPI):
                 from app.db.migrate import run_upgrade
                 run_upgrade("head")
                 logger.info("Alembic database migrations applied successfully to head")
+
+            # Purge legacy synthetic telemetry rows to ensure pristine database state
+            try:
+                from sqlalchemy import text
+                async with engine.begin() as conn:
+                    await conn.execute(text("DELETE FROM telemetry_events WHERE payload_metadata->>'synthetic_baseline' = 'true'"))
+            except Exception as pe:
+                logger.debug("Synthetic baseline cleanup skipped: %s", pe)
         else:
             db_host = settings.DATABASE_URL.split("@")[-1] if "@" in settings.DATABASE_URL else "localhost:5432"
             logger.info("PostgreSQL offline on %s; operating in decoupled mode", db_host)

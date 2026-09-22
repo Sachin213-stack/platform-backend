@@ -65,8 +65,6 @@ async def get_dashboard_metrics(
     timeseries_points: List[TimeseriesPoint] = []
     tier_metrics: Dict[str, Any] = {}
 
-    is_demo = str(current_user.business_id) == "11111111-1111-1111-1111-111111111111"
-
     if await is_db_available():
         try:
             # Check for recent active telemetry received within the active recency window (last 15 minutes)
@@ -76,8 +74,8 @@ async def get_dashboard_metrics(
             )
             active_events_count = (await db.execute(active_stmt)).scalar() or 0
 
-            # Live telemetry is only active if not demo tenant and events arrived in the last 15 minutes
-            if not is_demo and active_events_count > 0:
+            # Live telemetry is only active if events arrived in the last 15 minutes
+            if active_events_count > 0:
                 # Query 24-hour performance aggregations for active tenant
                 perf_stmt = select(
                     func.avg(TelemetryEvent.response_time_ms).label("avg_latency"),
@@ -194,67 +192,36 @@ async def get_dashboard_metrics(
         except Exception as e:
             logger.warning("Failed to fetch live telemetry metrics for dashboard: %s", e)
 
-    # If no live data, supply realistic baseline fallback so demo / empty states remain functional
-    if not timeseries_points:
-        for i in range(24, 0, -1):
-            ts = now - timedelta(hours=i)
-            # Baseline curve
-            hour_val = ts.hour
-            base_traffic = 350 + int(200 * (1.0 if 9 <= hour_val <= 21 else 0.4))
-            base_rev = round(base_traffic * 0.48, 2)
-            timeseries_points.append(
-                TimeseriesPoint(
-                    timestamp=ts.isoformat(),
-                    traffic=float(base_traffic),
-                    revenue=base_rev,
-                    response_time_ms=138.0,
-                    error_rate=0.08,
-                )
-            )
-
-    if not anomaly_items and not has_live_data:
-        anomaly_items.append(
-            AnomalyItem(
-                id="demo-ano-1",
-                metric_name="response_time",
-                severity="medium",
-                expected_value=180.0,
-                actual_value=245.0,
-                description="Sample baseline incident: Database pool latency variance on checkout",
-                detected_at=now - timedelta(minutes=14),
-            )
-        )
-
-    # Compute 2nd tier domain metrics
-    orders_rate = round(total_orders / 60.0, 1) if has_live_data else 38.4
+    # Compute 2nd tier domain metrics strictly from live telemetry
+    orders_rate = round(total_orders / 60.0, 1) if has_live_data else 0.0
     tier_metrics = {
         "orders_min": orders_rate,
-        "mrr_velocity": round(total_orders * 1.2, 0) if has_live_data else 184,
-        "auth_failure_rate": round(max(0.01, error_rate_pct * 0.4), 2),
-        "active_sessions": max(120, int(total_events_count * 0.35) if has_live_data else 3840),
-        "streams_min": int(total_events_count * 28.0) if has_live_data else 34920,
-        "clicks_min": max(1420, int(total_events_count * 1.5)) if has_live_data else 1420,
-        "tx_velocity": round(total_orders * 4.8, 1) if has_live_data else 1840,
-        "fraud_rate": round(max(0.01, error_rate_pct * 0.1), 2),
-        "ledger_latency": round(max(5.0, avg_latency * 0.15), 1),
-        "merchant_orders": round(total_orders * 0.8, 1) if has_live_data else 142,
+        "mrr_velocity": round(total_orders * 1.2, 0) if has_live_data else 0.0,
+        "auth_failure_rate": round(max(0.0, error_rate_pct * 0.4), 2) if has_live_data else 0.0,
+        "active_sessions": int(total_events_count * 0.35) if has_live_data else 0,
+        "streams_min": int(total_events_count * 28.0) if has_live_data else 0,
+        "clicks_min": int(total_events_count * 1.5) if has_live_data else 0,
+        "tx_velocity": round(total_orders * 4.8, 1) if has_live_data else 0.0,
+        "fraud_rate": round(max(0.0, error_rate_pct * 0.1), 2) if has_live_data else 0.0,
+        "ledger_latency": round(max(0.0, avg_latency * 0.15), 1) if has_live_data else 0.0,
+        "merchant_orders": round(total_orders * 0.8, 1) if has_live_data else 0,
     }
 
     response = DashboardMetricsResponse(
         kpis=KPISummary(
-            response_time_ms=round(avg_latency, 1),
+            response_time_ms=round(avg_latency, 1) if has_live_data else 0.0,
             response_time_delta_pct=-4.2 if has_live_data else 0.0,
-            error_rate_pct=error_rate_pct,
+            error_rate_pct=error_rate_pct if has_live_data else 0.0,
             error_rate_delta_pct=-0.02 if has_live_data else 0.0,
-            orders_per_min=round(total_orders / 60.0, 1),
+            orders_per_min=round(total_orders / 60.0, 1) if has_live_data else 0.0,
             orders_delta_pct=12.5 if has_live_data else 0.0,
-            checkout_failure_pct=0.01,
+            checkout_failure_pct=0.01 if has_live_data else 0.0,
             checkout_failure_delta_pct=0.0,
         ),
         capacity=CapacityMetrics(
-            cpu_pct=cpu_pct,
-            memory_pct=mem_pct,
-            queue_depth=queue_depth,
+            cpu_pct=cpu_pct if has_live_data else 0.0,
+            memory_pct=mem_pct if has_live_data else 0.0,
+            queue_depth=queue_depth if has_live_data else 0,
         ),
         recent_anomalies=anomaly_items,
         recent_telemetry_events=recent_telemetry_items,
@@ -307,13 +274,12 @@ async def get_analytics_summary(
 
     if await is_db_available():
         try:
-            is_demo = str(current_user.business_id) == "11111111-1111-1111-1111-111111111111"
             active_stmt = select(func.count(TelemetryEvent.id)).where(
                 TelemetryEvent.business_id == current_user.business_id,
                 TelemetryEvent.timestamp >= (now - timedelta(minutes=15)),
             )
             active_events_count = (await db.execute(active_stmt)).scalar() or 0
-            if not is_demo and active_events_count > 0:
+            if active_events_count > 0:
                 has_live_data = True
 
             # 1. Query latest forecast from MLWorker (or trigger on-demand fit)
@@ -403,33 +369,33 @@ async def get_analytics_summary(
         except Exception as e:
             logger.warning("Failed to compute live analytics summary: %s", e)
 
-    # If no live forecast curve exists yet, provide sample forecast points
+    # If no live forecast curve exists, maintain clean empty arrays
     if not forecast_curve:
         forecast_curve = {
-            "timestamps": [(now + timedelta(hours=i)).isoformat() for i in range(1, 25)],
-            "yhat": [round(150 + i * 2.5 + (i % 4) * 5, 1) for i in range(1, 25)],
-            "yhat_lower": [round(120 + i * 2.0, 1) for i in range(1, 25)],
-            "yhat_upper": [round(180 + i * 3.0, 1) for i in range(1, 25)],
+            "timestamps": [],
+            "yhat": [],
+            "yhat_lower": [],
+            "yhat_upper": [],
         }
 
-    exhaustion_date = (now + timedelta(days=runway_days)).strftime("%b %d, %Y")
+    exhaustion_date = (now + timedelta(days=runway_days)).strftime("%b %d, %Y") if has_live_data and runway_days > 0 else "N/A"
 
     resp = AnalyticsSummaryResponse(
         has_live_data=has_live_data,
         forecast_curve=forecast_curve,
-        crash_risk_pct=crash_risk_pct,
-        resource_runway_days=runway_days,
-        growth_rate_pct=growth_rate_pct,
-        exhaustion_date=f"In ~{runway_days} days ({exhaustion_date})",
-        bottleneck="Redis Session Connection Pool" if has_live_data else "Cluster Memory Saturation",
-        recommended_action="Scale checkout-v2 deployment to 8 replicas and apply Redis connection pooling",
-        model_metrics=model_metrics,
+        crash_risk_pct=crash_risk_pct if has_live_data else 0.0,
+        resource_runway_days=runway_days if has_live_data else 0,
+        growth_rate_pct=growth_rate_pct if has_live_data else 0.0,
+        exhaustion_date=f"In ~{runway_days} days ({exhaustion_date})" if has_live_data and runway_days > 0 else "No capacity exhaustion risk",
+        bottleneck="Redis Session Connection Pool" if has_live_data else "Nominal",
+        recommended_action="Scale deployment and tune connection pooling" if has_live_data else "Telemetry stream required for capacity analysis",
+        model_metrics=model_metrics if has_live_data else None,
         anomalies=anomalies_list,
         correlation_data={
             "latency_vs_conversion": -0.87,
             "error_vs_revenue": -0.92,
             "impact_per_100ms": "3.4% GMV drop",
-        },
+        } if has_live_data else {},
     )
 
     await redis_service.set_cache(cache_key, resp.model_dump(mode="json"), ttl_seconds=30)
