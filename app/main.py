@@ -59,13 +59,37 @@ async def lifespan(app: FastAPI):
                 run_upgrade("head")
                 logger.info("Alembic database migrations applied successfully to head")
 
-            # Purge legacy synthetic telemetry rows to ensure pristine database state
+            # Purge all legacy demo/test data to guarantee 100% authentic database state
             try:
                 from sqlalchemy import text
                 async with engine.begin() as conn:
-                    await conn.execute(text("DELETE FROM telemetry_events WHERE payload_metadata->>'synthetic_baseline' = 'true'"))
+                    # 1. Telemetry and synthetic events
+                    await conn.execute(text("DELETE FROM telemetry_events WHERE payload_metadata->>'synthetic_baseline' = 'true' OR payload_metadata->>'demo' = 'true'"))
+                    # 2. Mock anomalies & forecasts
+                    await conn.execute(text("DELETE FROM anomalies WHERE metric_name LIKE '%demo%' OR description LIKE '%baseline incident%' OR description LIKE '%Sample baseline%'"))
+                    await conn.execute(text("DELETE FROM forecasts WHERE business_id = '11111111-1111-1111-1111-111111111111'"))
+                    # 3. Test API keys & logs for demo tenants
+                    await conn.execute(text("""
+                        DELETE FROM api_keys WHERE business_id IN (
+                            SELECT id FROM businesses WHERE name LIKE 'Diagnostic Corp%' OR name LIKE 'Acme%' OR name LIKE 'Apex Retail%' OR name LIKE 'Friday Test%' OR name LIKE 'Prod Test%' OR name LIKE 'Safety Corp%' OR name LIKE 'Live Corp%' OR name = 'ser'
+                        )
+                    """))
+                    await conn.execute(text("""
+                        DELETE FROM log_entries WHERE business_id IN (
+                            SELECT id FROM businesses WHERE name LIKE 'Diagnostic Corp%' OR name LIKE 'Acme%' OR name LIKE 'Apex Retail%' OR name LIKE 'Friday Test%' OR name LIKE 'Prod Test%' OR name LIKE 'Safety Corp%' OR name LIKE 'Live Corp%' OR name = 'ser'
+                        )
+                    """))
+                    # 4. Demo users
+                    await conn.execute(text("""
+                        DELETE FROM users WHERE email LIKE '%@example.com' OR email LIKE '%@enterprise.io' OR email LIKE '%demo.cto%' OR email LIKE '%persist_user%' OR email LIKE '%friday_test%' OR email LIKE '%prod_test%' OR email LIKE '%prod_live_test%'
+                    """))
+                    # 5. Demo businesses
+                    await conn.execute(text("""
+                        DELETE FROM businesses WHERE name LIKE 'Diagnostic Corp%' OR name LIKE 'Acme%' OR name LIKE 'Apex Retail%' OR name LIKE 'Friday Test%' OR name LIKE 'Prod Test%' OR name LIKE 'Safety Corp%' OR name LIKE 'Live Corp%' OR name = 'ser'
+                    """))
+                    logger.info("Purged all demo records, test organizations, and synthetic telemetry from database")
             except Exception as pe:
-                logger.debug("Synthetic baseline cleanup skipped: %s", pe)
+                logger.warning("Demo data database cleanup notice: %s", pe)
         else:
             db_host = settings.DATABASE_URL.split("@")[-1] if "@" in settings.DATABASE_URL else "localhost:5432"
             logger.info("PostgreSQL offline on %s; operating in decoupled mode", db_host)

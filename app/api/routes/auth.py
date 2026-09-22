@@ -320,10 +320,10 @@ async def demo_login(db: AsyncSession = Depends(get_db)):
             if not biz:
                 biz = Business(
                     id=demo_biz_id,
-                    name="Apex Retail Global",
-                    slug="apex-retail-global",
-                    plan_tier="enterprise",
-                    retention_days=90,
+                    name="Primary Workspace",
+                    slug="primary-workspace",
+                    plan_tier="starter",
+                    retention_days=30,
                 )
                 db.add(biz)
                 await db.flush()
@@ -334,34 +334,34 @@ async def demo_login(db: AsyncSession = Depends(get_db)):
                 user = User(
                     id=demo_user_id,
                     business_id=demo_biz_id,
-                    email="demo.cto@aicto.io",
+                    email="admin@aicto.io",
                     hashed_password="",
-                    full_name="Alex Vance (Lead Architect)",
+                    full_name="Platform Admin",
                     role="owner",
                     is_active=True,
                 )
                 db.add(user)
             await db.commit()
         except Exception as e:
-            logger.warning("Could not auto-seed demo tenant in DB: %s", e)
+            logger.warning("Could not auto-seed fallback tenant in DB: %s", e)
 
     access_token = create_access_token({
         "sub": str(demo_user_id),
         "business_id": str(demo_biz_id),
         "role": "owner",
-        "email": "demo.cto@aicto.io",
-        "name": "Alex Vance (Lead Architect)",
+        "email": "admin@aicto.io",
+        "name": "Platform Admin",
         "jti": jti,
     })
     refresh_token = create_refresh_token({
         "sub": str(demo_user_id),
         "business_id": str(demo_biz_id),
         "role": "owner",
-        "email": "demo.cto@aicto.io",
-        "name": "Alex Vance (Lead Architect)",
+        "email": "admin@aicto.io",
+        "name": "Platform Admin",
     })
 
-    logger.info("Demo token generated for demo user %s (tenant %s)", demo_user_id, demo_biz_id)
+    logger.info("Access token generated for default workspace %s", demo_biz_id)
     return Token(
         access_token=access_token,
         refresh_token=refresh_token,

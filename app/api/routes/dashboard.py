@@ -52,12 +52,12 @@ async def get_dashboard_metrics(
 
     # 2. Query Postgres for real telemetry metrics
     now = datetime.now(timezone.utc)
-    avg_latency = 142.0
-    total_orders = 320
-    error_rate_pct = 0.08
-    cpu_pct = 42.0
-    mem_pct = 58.5
-    queue_depth = 3
+    avg_latency = 0.0
+    total_orders = 0
+    error_rate_pct = 0.0
+    cpu_pct = 0.0
+    mem_pct = 0.0
+    queue_depth = 0
     has_live_data = False
     total_events_count = 0
     anomaly_items: List[AnomalyItem] = []

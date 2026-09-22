@@ -118,13 +118,13 @@ async def get_current_user_and_business(
 
     if not user:
         if settings.ENVIRONMENT == "development" or str(user_id) == "00000000-0000-0000-0000-000000000001":
-            # Development / Demo fallback user (Alex Vance / Apex Retail Global)
+            # Development fallback user
             return User(
                 id=user_id,
                 business_id=business_id,
-                email=payload.get("email", "demo.cto@aicto.io"),
+                email=payload.get("email", "operator@aicto.io"),
                 hashed_password="",
-                full_name=payload.get("name", "Alex Vance (Lead Architect)"),
+                full_name=payload.get("name", "Account Owner"),
                 role=payload.get("role", "owner"),
                 is_active=True,
             )
