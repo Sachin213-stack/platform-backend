@@ -4,9 +4,11 @@ from typing import Optional
 import time
 import uuid
 
-from fastapi import FastAPI, Request, Response
+from pathlib import Path
+from fastapi import FastAPI, Request, Response, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, FileResponse
+from fastapi.staticfiles import StaticFiles
 
 from app.core.config import settings
 from app.core.logging import (
@@ -371,3 +373,29 @@ async def root():
         "status": "online",
         "docs": "/docs",
     }
+
+
+# Static File Hosting & Dedicated Tracker Endpoint
+STATIC_DIR = Path(__file__).parent / "static"
+
+
+@app.get("/static/tracker.js")
+@app.get("/api/tracker.js")
+@app.get("/tracker.js")
+async def serve_tracker_script():
+    tracker_path = STATIC_DIR / "tracker.js"
+    if tracker_path.exists():
+        return FileResponse(
+            str(tracker_path),
+            media_type="application/javascript",
+            headers={
+                "Cache-Control": "public, max-age=3600",
+                "Access-Control-Allow-Origin": "*",
+                "Access-Control-Allow-Methods": "GET, HEAD, OPTIONS",
+            },
+        )
+    raise HTTPException(status_code=404, detail="tracker.js not found")
+
+
+if STATIC_DIR.exists():
+    app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
