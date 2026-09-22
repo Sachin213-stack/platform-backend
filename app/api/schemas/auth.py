@@ -63,3 +63,16 @@ class UserOrgUpdate(BaseModel):
     timezone: Optional[str] = None
     currency: Optional[str] = None
     auto_refresh_interval: Optional[str] = None
+
+
+class ApiKeyResponse(BaseModel):
+    id: uuid.UUID
+    name: str
+    key_prefix: str
+    api_key: Optional[str] = None
+    is_active: bool = True
+    created_at: Optional[str] = None
+
+
+class ApiKeyCreate(BaseModel):
+    name: str = "Website Telemetry Snippet Key"
