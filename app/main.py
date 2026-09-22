@@ -4,7 +4,7 @@ from typing import Optional
 import time
 import uuid
 
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
@@ -231,7 +231,7 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-# CORS Configuration
+# CORS Configuration (Strict baseline for standard API endpoints)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.ALLOWED_ORIGINS,
@@ -239,6 +239,55 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+# Ingestion Route Scoped CORS Middleware (Permissive CORS scoped solely to /ingestion/events)
+@app.middleware("http")
+async def ingestion_scoped_cors_middleware(request: Request, call_next):
+    is_ingestion_path = request.url.path in [
+        "/api/ingestion/events",
+        "/api/v1/ingestion/events",
+        "/ingestion/events",
+    ]
+    origin = request.headers.get("Origin")
+
+    # Only process requests targeting the ingestion events pipeline
+    if not is_ingestion_path:
+        return await call_next(request)
+
+    # Handle Preflight OPTIONS probe specifically for ingestion
+    if request.method == "OPTIONS":
+        if origin:
+            return Response(
+                status_code=200,
+                headers={
+                    "Access-Control-Allow-Origin": origin,
+                    "Access-Control-Allow-Methods": "POST, OPTIONS",
+                    "Access-Control-Allow-Headers": "Content-Type, X-API-Key, Authorization, X-Correlation-ID, X-Request-ID",
+                    "Access-Control-Max-Age": "86400",
+                },
+            )
+        return Response(status_code=204)
+
+    # For actual ingestion request, execute handler
+    response = await call_next(request)
+
+    # Dynamic Origin Validation & Header Reflection for Tenant Telemetry
+    if origin:
+        api_key = request.headers.get("X-API-Key")
+        auth_header = request.headers.get("Authorization")
+        tenant_id = None
+        if api_key:
+            from app.api.routes.ingestion import _resolve_api_key_tenant
+            tenant_id = await _resolve_api_key_tenant(api_key)
+
+        # Reflect origin if authenticated via valid tenant API key or Bearer token
+        if tenant_id or (auth_header and auth_header.startswith("Bearer ")):
+            response.headers["Access-Control-Allow-Origin"] = origin
+            response.headers["Access-Control-Allow-Methods"] = "POST, OPTIONS"
+            response.headers["Access-Control-Allow-Headers"] = "Content-Type, X-API-Key, Authorization, X-Correlation-ID, X-Request-ID"
+
+    return response
 
 
 # Request ID & Logging Middleware
