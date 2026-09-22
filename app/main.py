@@ -281,10 +281,10 @@ async def ingestion_scoped_cors_middleware(request: Request, call_next):
         tenant_id = None
         if api_key:
             from app.api.routes.ingestion import _resolve_api_key_tenant
-            tenant_id = await _resolve_api_key_tenant(api_key)
+            tenant_id = await _resolve_api_key_tenant(api_key.strip())
 
-        # Reflect origin if authenticated via valid tenant API key or Bearer token
-        if tenant_id or (auth_header and auth_header.startswith("Bearer ")):
+        # Reflect origin if authenticated via valid tenant API key or Bearer token, or on error responses
+        if tenant_id or (auth_header and auth_header.startswith("Bearer ")) or response.status_code in [400, 401, 403, 422]:
             response.headers["Access-Control-Allow-Origin"] = origin
             response.headers["Access-Control-Allow-Methods"] = "POST, OPTIONS"
             response.headers["Access-Control-Allow-Headers"] = "Content-Type, X-API-Key, Authorization, X-Correlation-ID, X-Request-ID"

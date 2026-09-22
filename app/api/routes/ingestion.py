@@ -58,6 +58,7 @@ async def _resolve_api_key_tenant(raw_key: str) -> Optional[str]:
     """Resolves an API key to its associated business_id via Redis cache or Postgres."""
     if not raw_key:
         return None
+    raw_key = raw_key.strip()
 
     # Check Redis cache first
     cache_key = f"apikey:resolved:{raw_key[:16]}"
