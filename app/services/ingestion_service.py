@@ -10,6 +10,7 @@ from app.core.config import settings
 from app.core.logging import logger
 from app.db.session import AsyncSessionLocal, is_db_available
 from app.db.models.telemetry import TelemetryEvent
+from app.db.models.log_entry import LogEntry
 from app.services.redis_service import redis_service
 
 
@@ -124,6 +125,84 @@ class IngestionService:
             dlq_buf.append((entry_id, dlq_entry))
             logger.warning("Quarantined poison-pill event %s to in-memory DLQ buffer (Reason: %s)", entry_id, reason)
 
+    async def _mirror_telemetry_errors_to_logs(self, records: List[Dict[str, Any]]) -> None:
+        """
+        Bridges client website errors and HTTP failures into log_entries and Redis Stream.
+        Ensures uncaught JS errors, unhandled rejections, and HTTP 4xx/5xx errors from tracker.js
+        immediately stream into the live Logs & Observability terminal.
+        """
+        log_entries_to_persist = []
+        for r in records:
+            ev_type = (r.get("event_type") or "").lower()
+            status = r.get("status_code", 200)
+            is_client_error = ev_type in ("js_error", "unhandled_rejection", "client_error") or status >= 400
+            if not is_client_error:
+                continue
+
+            lvl = "error" if (status >= 500 or "error" in ev_type or "rejection" in ev_type) else "warn"
+            meta = r.get("payload_metadata") or {}
+            endpoint = r.get("endpoint") or "/"
+
+            if ev_type == "js_error":
+                msg = meta.get("message") or "Uncaught JavaScript exception in browser"
+                fn = meta.get("filename") or ""
+                line = meta.get("lineno") or 0
+                content = f"[CLIENT-BROWSER] {msg} ({fn}:{line})" if fn else f"[CLIENT-BROWSER] {msg}"
+            elif ev_type == "unhandled_rejection":
+                reason = meta.get("reason") or "Unhandled Promise rejection in browser"
+                content = f"[CLIENT-BROWSER] Unhandled Promise Rejection: {reason}"
+            else:
+                content = f"[HTTP-{status}] Ingress failure on {endpoint} (latency: {r.get('response_time_ms', 0)}ms)"
+
+            entry_id = str(uuid.uuid4())
+            ts = r.get("timestamp") or datetime.now(timezone.utc)
+            parsed_fields = {
+                "endpoint": endpoint,
+                "status_code": status,
+                "event_type": ev_type,
+                "latency_ms": r.get("response_time_ms", 0.0),
+                **meta,
+            }
+
+            stream_payload = {
+                "id": entry_id,
+                "business_id": str(r["business_id"]),
+                "log_type": "browser" if "js" in ev_type or "client" in ev_type or "rejection" in ev_type else "application",
+                "source": "client-browser" if "js" in ev_type or "client" in ev_type or "rejection" in ev_type else "api-gateway",
+                "format": "json",
+                "content": content[:10000],
+                "parsed_fields": parsed_fields,
+                "level": lvl,
+                "timestamp": ts.isoformat() if hasattr(ts, "isoformat") else str(ts),
+                "ingested_at": datetime.now(timezone.utc).isoformat(),
+            }
+
+            # Add to Redis log stream for live-tail SSE
+            await redis_service.add_to_stream("log:entries:stream", stream_payload)
+
+            log_entries_to_persist.append(
+                LogEntry(
+                    id=uuid.UUID(entry_id),
+                    business_id=r["business_id"],
+                    log_type=stream_payload["log_type"],
+                    source=stream_payload["source"],
+                    format="json",
+                    content=content[:10000],
+                    parsed_fields=parsed_fields,
+                    level=lvl,
+                    timestamp=ts if isinstance(ts, datetime) else datetime.now(timezone.utc),
+                    ingested_at=datetime.now(timezone.utc),
+                )
+            )
+
+        if log_entries_to_persist and await is_db_available():
+            try:
+                async with AsyncSessionLocal() as session:
+                    session.add_all(log_entries_to_persist)
+                    await session.commit()
+            except Exception as e:
+                logger.debug("Failed saving mirrored LogEntries to DB: %s", e)
+
     async def process_batch(self, batch_size: int = 100, block_ms: int = 2000) -> int:
         """
         Reads a batch of events from the stream, batch-inserts into Postgres,
@@ -176,6 +255,10 @@ class IngestionService:
                     logger.debug("Database offline during batch telemetry insert (processed in dev mode): %s", db_err)
             elif parsed_records:
                 logger.debug("Database offline: buffered %d telemetry events in memory", len(parsed_records))
+
+            # Mirror client-side error events into log_entries and Redis log stream
+            if parsed_records:
+                await self._mirror_telemetry_errors_to_logs(parsed_records)
 
             # Invalidate dashboard metrics cache so UI updates immediately
             biz_ids = {str(r["business_id"]) for r in parsed_records if "business_id" in r}
@@ -249,6 +332,10 @@ class IngestionService:
                     db_duration_ms = (time.perf_counter() - db_start) * 1000
                 except Exception as db_err:
                     logger.debug("Database write skipped (DB offline): %s", db_err)
+
+            # Mirror client-side error events into log_entries and Redis log stream
+            if parsed_records:
+                await self._mirror_telemetry_errors_to_logs(parsed_records)
 
             # Acknowledge messages in Redis
             if ack_ids:

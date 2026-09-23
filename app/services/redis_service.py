@@ -81,7 +81,53 @@ class RedisService:
             return entry_id
         except Exception as e:
             logger.error("Error adding to Redis Stream %s: %s", stream_key, e, exc_info=True)
-            return None
+    async def read_stream(
+        self,
+        stream_key: str,
+        last_id: str = "0-0",
+        count: int = 50,
+        block_ms: Optional[int] = None,
+    ) -> List[Tuple[str, Dict[str, Any]]]:
+        """
+        Reads entries from a Redis Stream newer than last_id.
+        Supports both live Redis (via xread) and in-memory fallback.
+        """
+        if not self.redis:
+            entries = self._memory_streams.get(stream_key, [])
+            results = []
+            for entry_id, data in entries:
+                if last_id == "0-0" or last_id == "0" or entry_id > last_id:
+                    results.append((entry_id, data))
+                if len(results) >= count:
+                    break
+            return results
+
+        try:
+            streams_arg = {stream_key: last_id}
+            kwargs = {"count": count}
+            if block_ms is not None:
+                kwargs["block"] = block_ms
+            res = await self.redis.xread(streams_arg, **kwargs)
+            if not res:
+                return []
+            parsed_entries = []
+            for stream_name, stream_items in res:
+                for item_id, fields in stream_items:
+                    # Deserialize JSON fields if needed
+                    parsed_fields = {}
+                    for k, v in fields.items():
+                        if isinstance(v, str) and (v.startswith("{") or v.startswith("[")):
+                            try:
+                                parsed_fields[k] = json.loads(v)
+                            except Exception:
+                                parsed_fields[k] = v
+                        else:
+                            parsed_fields[k] = v
+                    parsed_entries.append((item_id, parsed_fields))
+            return parsed_entries
+        except Exception as e:
+            logger.debug("Error reading from Redis Stream %s: %s", stream_key, e)
+            return []
 
     async def check_idempotency_key(self, key: str, ttl_seconds: int = 86400) -> bool:
         """

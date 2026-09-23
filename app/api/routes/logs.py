@@ -109,77 +109,13 @@ async def get_stream_user_and_business(
 
 
 # -------------------------------------------------------------
-# Realistic Mock Log Generator for Development / Baseline
-# -------------------------------------------------------------
-def _generate_realistic_sample_logs(business_id: uuid.UUID, count: int = 60) -> List[LogEntryItem]:
-    """Generates authentic microservice log entries for development or fresh tenants."""
-    now = datetime.now(timezone.utc)
-    services = [
-        ("api-gateway", "application", ["GET /api/v1/orders", "POST /api/v1/checkout", "GET /api/v1/health", "OPTIONS /api/v1/cart"]),
-        ("checkout-service", "application", ["Processing payment intent", "Card validation tokenized", "Cart reservation released", "Checkout state transitioned to COMPLETED"]),
-        ("auth-service", "application", ["JWT token issued", "OAuth token refresh", "Session validated", "API key lookup hit cache"]),
-        ("worker-ml", "application", ["Anomaly scoring window evaluated", "IsolationForest fitted on 10k vectors", "Forecast batch emitted"]),
-        ("k8s-ingress-controller", "kubernetes", ["Upstream connection established", "TLS handshake completed", "Route matched rule /api/*", "Backend health probe 200 OK"]),
-        ("postgres-pool", "container", ["Client connection acquired from pool", "Transaction committed in 2.4ms", "Idle connection reaped", "Vacuum analyze completed"]),
-    ]
-
-    items: List[LogEntryItem] = []
-    for i in range(count):
-        # Distribute over last 4 hours
-        ts = now - timedelta(seconds=i * 45 + (i % 7) * 3)
-        svc, log_type, msgs = services[i % len(services)]
-        msg = msgs[i % len(msgs)]
-
-        # Determine level
-        if i in (4, 18, 33):
-            level = "error"
-            content = f"[{svc.upper()}] ERROR: Connection reset by peer during upstream call to payment-gw-us-east: timeout after 5000ms"
-            parsed = {"status_code": 504, "error": "UpstreamTimeout", "latency_ms": 5002, "service": svc, "retry_count": 3}
-        elif i in (5, 19, 34):
-            level = "warn"
-            content = f"[{svc.upper()}] WARN: Circuit breaker tripped for service 'payment-gw'. Threshold: 3 consecutive failures."
-            parsed = {"circuit_state": "OPEN", "consecutive_failures": 3, "service": svc}
-        elif i in (8, 22, 45):
-            level = "warn"
-            content = f"[{svc.upper()}] WARN: Connection pool high watermark: 85/100 active connections in pool"
-            parsed = {"active_conns": 85, "max_conns": 100, "service": svc}
-        elif i % 5 == 0:
-            level = "debug"
-            content = f"[{svc.upper()}] DEBUG: trace_id={uuid.uuid4().hex[:16]} span_id={uuid.uuid4().hex[:8]} cache_hit=true"
-            parsed = {"cache_hit": True, "span_id": uuid.uuid4().hex[:8], "service": svc}
-        else:
-            level = "info"
-            content = f"[{svc.upper()}] INFO: {msg} [status=200, duration={(i * 13) % 180 + 12}ms]"
-            parsed = {"status_code": 200, "latency_ms": (i * 13) % 180 + 12, "service": svc}
-
-        items.append(
-            LogEntryItem(
-                id=str(uuid.uuid4()),
-                business_id=str(business_id),
-                log_type=log_type,
-                source=svc,
-                format="json" if parsed else "text",
-                content=content,
-                parsed_fields=parsed,
-                level=level,
-                timestamp=ts,
-                ingested_at=ts + timedelta(milliseconds=120),
-            )
-        )
-
-    # Sort newest first
-    items.sort(key=lambda x: x.timestamp, reverse=True)
-    return items
-
-
-# -------------------------------------------------------------
 # 1. GET /api/logs — Filterable & Paginated Log Queries (RLS-Scoped)
 # -------------------------------------------------------------
 @router.get("", response_model=LogQueryResponse)
 async def query_logs(
     time_from: Optional[datetime] = Query(None, description="Start timestamp filter (ISO-8601)"),
     time_to: Optional[datetime] = Query(None, description="End timestamp filter (ISO-8601)"),
-    log_type: Optional[str] = Query(None, description="Filter by log type: application, container, kubernetes, other"),
+    log_type: Optional[str] = Query(None, description="Filter by log type: application, container, kubernetes, browser, other"),
     level: Optional[str] = Query(None, description="Filter by level: comma-separated e.g. info,warn,error,debug"),
     source: Optional[str] = Query(None, description="Filter by source or service name"),
     search: Optional[str] = Query(None, description="Free-text search substring across content"),
@@ -191,6 +127,7 @@ async def query_logs(
     """
     Returns paginated, filterable log entries for the current tenant.
     Strictly scoped to current_user.business_id under PostgreSQL Row-Level Security (RLS).
+    Returns real ingested entries only. Zero mock/demo data is generated.
     """
     biz_id = current_user.business_id
 
@@ -252,28 +189,52 @@ async def query_logs(
         except Exception as e:
             logger.warning("Failed to query log_entries table from DB: %s", e)
 
-    # Fallback to rich development mock logs if DB is empty or offline
-    if not entries and total_count == 0:
-        sample_logs = _generate_realistic_sample_logs(biz_id, count=120)
+    # In development mode with DB offline: inspect recent buffered stream entries from redis_service
+    if not entries and total_count == 0 and hasattr(redis_service, "_memory_streams"):
+        mem_stream = redis_service._memory_streams.get("log:entries:stream", [])
+        matched_mem = []
+        for entry_id, item in reversed(mem_stream):
+            if str(item.get("business_id")) != str(biz_id):
+                continue
+            item_ts_str = item.get("timestamp")
+            try:
+                item_ts = datetime.fromisoformat(item_ts_str) if item_ts_str else datetime.now(timezone.utc)
+            except Exception:
+                item_ts = datetime.now(timezone.utc)
 
-        # Apply in-memory filters to sample logs
-        filtered = sample_logs
-        if time_from:
-            filtered = [x for x in filtered if x.timestamp >= time_from]
-        if time_to:
-            filtered = [x for x in filtered if x.timestamp <= time_to]
-        if log_type and log_type != "all":
-            filtered = [x for x in filtered if x.log_type == log_type]
-        if selected_levels and "all" not in selected_levels:
-            filtered = [x for x in filtered if (x.level or "").lower() in selected_levels]
-        if source and source != "all":
-            filtered = [x for x in filtered if x.source == source]
-        if search and search.strip():
-            st = search.strip().lower()
-            filtered = [x for x in filtered if st in x.content.lower()]
+            # Apply filters
+            if time_from and item_ts < time_from:
+                continue
+            if time_to and item_ts > time_to:
+                continue
+            if log_type and log_type != "all" and item.get("log_type") != log_type:
+                continue
+            item_lvl = (item.get("level") or "info").lower()
+            if selected_levels and "all" not in selected_levels and item_lvl not in selected_levels:
+                continue
+            if source and source != "all" and item.get("source") != source:
+                continue
+            item_content = item.get("content", "")
+            if search and search.strip() and search.strip().lower() not in item_content.lower():
+                continue
 
-        total_count = len(filtered)
-        entries = filtered[offset : offset + limit]
+            matched_mem.append(
+                LogEntryItem(
+                    id=item.get("id", str(uuid.uuid4())),
+                    business_id=str(biz_id),
+                    log_type=item.get("log_type", "application"),
+                    source=item.get("source", "application"),
+                    format=item.get("format", "text"),
+                    content=item_content,
+                    parsed_fields=item.get("parsed_fields") or {},
+                    level=item_lvl,
+                    timestamp=item_ts,
+                    ingested_at=item_ts,
+                )
+            )
+
+        total_count = len(matched_mem)
+        entries = matched_mem[offset : offset + limit]
 
     return LogQueryResponse(
         total=total_count,
@@ -299,7 +260,7 @@ async def stream_logs(
     """
     Server-Sent Events (SSE) live-tail endpoint.
     Consumes live log entries from Redis Stream and pushes them to connected clients
-    for the authenticated business_id only.
+    for the authenticated business_id only. Zero fake/synthetic pulses are emitted.
     """
     biz_id = str(current_user.business_id)
     selected_levels = [l.strip().lower() for l in level.split(",") if l.strip()] if level else []
@@ -314,19 +275,14 @@ async def stream_logs(
         }
         yield f"event: status\ndata: {json.dumps(connect_msg)}\n\n"
 
-        counter = 0
-        last_heartbeat = asyncio.get_event_loop().time()
+        last_stream_id = "0-0"
+        # Start reading from current stream end if available
+        if hasattr(redis_service, "_memory_streams") and "log:entries:stream" in redis_service._memory_streams:
+            st = redis_service._memory_streams["log:entries:stream"]
+            if st:
+                last_stream_id = st[-1][0]
 
-        sample_services = ["checkout-service", "api-gateway", "auth-service", "worker-ml", "postgres-pool"]
-        sample_messages = [
-            ("info", "HTTP GET /api/v1/telemetry 200 OK [latency={latency}ms]"),
-            ("info", "Token validation cache hit for session token"),
-            ("info", "Order pipeline completed step 2: inventory reserved"),
-            ("debug", "Telemetry event dispatched to Redis buffer"),
-            ("warn", "High memory usage detected on pod worker-ml-0: 78.4%"),
-            ("info", "PostgreSQL connection returned to pool"),
-            ("error", "Database query timeout after 3000ms: retrying attempt 1"),
-        ]
+        last_heartbeat = asyncio.get_event_loop().time()
 
         try:
             while True:
@@ -335,62 +291,62 @@ async def stream_logs(
                     break
 
                 now_time = asyncio.get_event_loop().time()
-                # 1. Check Redis Stream for real ingested logs
-                real_entry = None
-                try:
-                    # Check in-memory stream buffer from redis_service if offline
-                    if hasattr(redis_service, "_memory_streams") and "log:entries:stream" in redis_service._memory_streams:
-                        st = redis_service._memory_streams["log:entries:stream"]
-                        if st:
-                            for _, entry_data in st[-5:]:
-                                if entry_data.get("business_id") == biz_id:
-                                    real_entry = entry_data
-                                    break
-                except Exception as ex:
-                    logger.debug("Error checking memory stream: %s", ex)
 
-                # If no active shipper is generating continuous volume, generate realistic pulse
-                counter += 1
-                now_utc = datetime.now(timezone.utc)
-                lvl, tmpl = sample_messages[counter % len(sample_messages)]
-                svc = sample_services[counter % len(sample_services)]
+                # Read genuine entries from Redis stream newer than last_stream_id
+                stream_items = await redis_service.read_stream(
+                    stream_key="log:entries:stream",
+                    last_id=last_stream_id,
+                    count=50,
+                    block_ms=1000,
+                )
 
-                # Apply filters if specified
-                level_match = not selected_levels or "all" in selected_levels or lvl in selected_levels
-                source_match = not source or source == "all" or source == svc
-                type_match = not log_type or log_type == "all" or log_type == "application"
+                if stream_items:
+                    for entry_id, item_data in stream_items:
+                        last_stream_id = entry_id
+                        # Strictly verify tenant ownership
+                        if str(item_data.get("business_id")) != biz_id:
+                            continue
 
-                if level_match and source_match and type_match:
-                    content_str = f"[{svc.upper()}] {lvl.upper()}: {tmpl.format(latency=(counter * 17) % 90 + 15)}"
-                    search_match = not search or not search.strip() or search.strip().lower() in content_str.lower()
+                        lvl = (item_data.get("level") or "info").lower()
+                        svc = item_data.get("source") or "application"
+                        lt = item_data.get("log_type") or "application"
+                        content_str = item_data.get("content") or ""
 
-                    if search_match:
-                        log_entry = {
-                            "id": str(uuid.uuid4()),
-                            "business_id": biz_id,
-                            "log_type": "application",
-                            "source": svc,
-                            "format": "json",
-                            "content": content_str,
-                            "parsed_fields": {
-                                "service": svc,
+                        # Apply user filters
+                        level_match = not selected_levels or "all" in selected_levels or lvl in selected_levels
+                        source_match = not source or source == "all" or source == svc
+                        type_match = not log_type or log_type == "all" or log_type == lt
+                        search_match = not search or not search.strip() or search.strip().lower() in content_str.lower()
+
+                        if level_match and source_match and type_match and search_match:
+                            parsed_meta = item_data.get("parsed_fields")
+                            if isinstance(parsed_meta, str):
+                                try:
+                                    parsed_meta = json.loads(parsed_meta)
+                                except Exception:
+                                    parsed_meta = {}
+
+                            log_entry = {
+                                "id": item_data.get("id") or str(uuid.uuid4()),
+                                "business_id": biz_id,
+                                "log_type": lt,
+                                "source": svc,
+                                "format": item_data.get("format", "text"),
+                                "content": content_str,
+                                "parsed_fields": parsed_meta or {},
                                 "level": lvl,
-                                "latency_ms": (counter * 17) % 90 + 15,
-                                "trace_id": uuid.uuid4().hex[:12],
-                            },
-                            "level": lvl,
-                            "timestamp": now_utc.isoformat(),
-                            "ingested_at": now_utc.isoformat(),
-                        }
-                        yield f"event: log\ndata: {json.dumps(log_entry)}\n\n"
+                                "timestamp": item_data.get("timestamp") or datetime.now(timezone.utc).isoformat(),
+                                "ingested_at": item_data.get("ingested_at") or datetime.now(timezone.utc).isoformat(),
+                            }
+                            yield f"event: log\ndata: {json.dumps(log_entry)}\n\n"
 
-                # Keep-alive heartbeat every 15 seconds
+                # Keep-alive heartbeat every 15 seconds to keep EventSource healthy
                 if now_time - last_heartbeat >= 15.0:
                     yield ": keepalive\n\n"
                     last_heartbeat = now_time
 
-                # Pulse interval: new log entry every 2.5 seconds
-                await asyncio.sleep(2.5)
+                # Small sleep when queue is quiet
+                await asyncio.sleep(0.5)
 
         except asyncio.CancelledError:
             logger.info("SSE log stream cancelled for business %s", biz_id)
@@ -420,6 +376,7 @@ async def get_logs_around_anomaly(
     """
     Returns correlated log entries in the time window (5 min before to 1 min after)
     of a detected anomaly, RLS-scoped to current tenant.
+    Returns real entries only. If no logs exist in that window, returns empty list.
     """
     biz_id = current_user.business_id
     now = datetime.now(timezone.utc)
@@ -484,16 +441,6 @@ async def get_logs_around_anomaly(
         except Exception as e:
             logger.warning("Failed to query log_entries around anomaly: %s", e)
 
-    # If no DB logs found, generate realistic correlated entries in the window
-    if not entries:
-        sample_entries = _generate_realistic_sample_logs(biz_id, count=30)
-        # Shift timestamps into the anomaly window
-        for idx, entry in enumerate(sample_entries):
-            entry.timestamp = detected_at - timedelta(seconds=idx * 12 - 30)
-            if entry.level in ("error", "warn"):
-                root_cause_ids.append(entry.id)
-            entries.append(entry)
-
     return LogAroundAnomalyResponse(
         anomaly_id=anomaly_id,
         anomaly_title=title,
@@ -515,7 +462,7 @@ async def get_log_sources(
     current_user: User = Depends(get_current_user_and_business),
     db: AsyncSession = Depends(get_db),
 ):
-    """Returns distinct log sources (services, pods) recorded for the current tenant."""
+    """Returns distinct log sources (services, pods, client-browser) recorded for the current tenant."""
     biz_id = current_user.business_id
     sources = set()
 
@@ -529,18 +476,14 @@ async def get_log_sources(
         except Exception as e:
             logger.warning("Failed to query distinct log sources: %s", e)
 
-    # Defaults / fallback sources
-    fallback_sources = [
-        "api-gateway",
-        "checkout-service",
-        "auth-service",
-        "worker-ml",
-        "k8s-ingress-controller",
-        "postgres-pool",
-        "payment-gw",
-    ]
-    for fs in fallback_sources:
-        sources.add(fs)
+    # In development mode if DB is offline, check memory stream for tenant's sources
+    if hasattr(redis_service, "_memory_streams"):
+        mem_stream = redis_service._memory_streams.get("log:entries:stream", [])
+        for _, item in mem_stream:
+            if str(item.get("business_id")) == str(biz_id):
+                src = item.get("source")
+                if src:
+                    sources.add(src)
 
     return LogSourcesResponse(sources=sorted(list(sources)))
 

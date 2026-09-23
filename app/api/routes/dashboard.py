@@ -259,17 +259,10 @@ async def get_analytics_summary(
     now = datetime.now(timezone.utc)
     has_live_data = False
     forecast_curve: Dict[str, Any] = {}
-    crash_risk_pct = 4.2
-    runway_days = 28
-    growth_rate_pct = 4.8
-    model_metrics = {
-        "precision": 97.4,
-        "recall": 94.8,
-        "f1Score": 96.1,
-        "falsePositiveRate": 1.2,
-        "lastRetrained": "Recent MLWorker cycle",
-        "datasetVectors": "14,200",
-    }
+    crash_risk_pct = 0.0
+    runway_days = 0
+    growth_rate_pct = 0.0
+    model_metrics = None
     anomalies_list: List[Dict[str, Any]] = []
 
     if await is_db_available():
@@ -464,28 +457,5 @@ async def get_dashboard_audit_logs(
                 )
         except Exception as e:
             logger.debug("Could not fetch resolved anomalies for audit log: %s", e)
-
-    # 3. Add baseline entries if empty
-    if not entries:
-        entries = [
-            AuditLogEntry(
-                id="init-audit-1",
-                timestamp="System Baseline",
-                actor="Sarah Jenkins (SRE Lead)",
-                action="Rotated API Key & Token for Ingestion Webhook Pipeline",
-                impact="Zero failed webhook calls across 14,000 transactions.",
-                confidence="Verified",
-                status="Resolved",
-            ),
-            AuditLogEntry(
-                id="init-audit-2",
-                timestamp="System Baseline",
-                actor="FRIDAY AI Optimizer",
-                action="Auto-scaled SQS processing worker pods from 6 to 18 during flash sale peak",
-                impact="Queue backlog eliminated within 90 seconds.",
-                confidence="99.9%",
-                status="Applied",
-            ),
-        ]
 
     return AuditLogResponse(total=len(entries), entries=entries[:limit])
