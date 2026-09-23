@@ -5,7 +5,7 @@ import json
 import httpx
 from typing import List, Dict, Any, Optional, AsyncGenerator
 from datetime import datetime, timezone, timedelta
-from sqlalchemy import select, func, desc
+from sqlalchemy import select, func, desc, case
 
 from app.core.config import settings
 from app.core.logging import logger
@@ -205,19 +205,22 @@ class LLMAdapter:
         """Fetches live telemetry vitals, active anomalies, and alert rules to ground FRIDAY's analysis."""
         context = {
             "business_name": "AI-CTO Managed Tenant",
-            "avg_response_time_ms": 184.0,
-            "error_rate_pct": 0.08,
-            "orders_per_min": 5.3,
-            "cpu_usage_pct": 42.0,
-            "memory_usage_pct": 58.5,
-            "queue_depth": 3,
+            "has_live_telemetry": False,
+            "telemetry_status": "disconnected",
+            "message": "No live telemetry or external website connected yet.",
+            "avg_response_time_ms": None,
+            "error_rate_pct": None,
+            "orders_per_min": None,
+            "cpu_usage_pct": None,
+            "memory_usage_pct": None,
+            "queue_depth": 0,
             "active_anomalies": [],
             "alert_thresholds": [],
-            "crash_risk_pct": 4.2,
+            "crash_risk_pct": None,
         }
 
         if not await is_db_available():
-            logger.debug("Database offline: using default baseline telemetry vitals for FRIDAY")
+            logger.debug("Database offline: no telemetry available for FRIDAY")
             return context
 
         try:
@@ -243,19 +246,31 @@ class LLMAdapter:
                     func.avg(TelemetryEvent.memory_usage_pct).label("avg_mem"),
                     func.avg(TelemetryEvent.queue_depth).label("avg_queue"),
                     func.sum(TelemetryEvent.orders_count).label("orders"),
+                    func.count(TelemetryEvent.id).label("total_events"),
+                    func.sum(
+                        case((TelemetryEvent.status_code >= 400, 1), else_=0)
+                    ).label("error_events"),
                 ).where(
                     TelemetryEvent.business_id == biz_uuid,
                     TelemetryEvent.timestamp >= one_hour_ago,
                 )
                 res = (await session.execute(perf_stmt)).first()
 
-                if res and res.avg_latency is not None:
+                if res and res.total_events and res.total_events > 0 and res.avg_latency is not None:
+                    context["has_live_telemetry"] = True
+                    context["telemetry_status"] = "active"
+                    context["message"] = "Live telemetry ingestion stream is active."
                     context["avg_response_time_ms"] = round(float(res.avg_latency), 1)
-                    context["cpu_usage_pct"] = round(float(res.avg_cpu or 40.0), 1)
-                    context["memory_usage_pct"] = round(float(res.avg_mem or 55.0), 1)
+                    context["cpu_usage_pct"] = round(float(res.avg_cpu or 0.0), 1)
+                    context["memory_usage_pct"] = round(float(res.avg_mem or 0.0), 1)
                     context["queue_depth"] = int(res.avg_queue or 0)
                     if res.orders:
                         context["orders_per_min"] = round(float(res.orders) / 60.0, 1)
+                    else:
+                        context["orders_per_min"] = 0.0
+
+                    err_count = res.error_events or 0
+                    context["error_rate_pct"] = round((float(err_count) / float(res.total_events)) * 100.0, 2)
 
                 # 3. Query unresolved anomalies
                 anom_stmt = (
@@ -290,15 +305,16 @@ class LLMAdapter:
                 ]
 
                 # 5. Query latest crash risk forecast
-                fc_stmt = (
-                    select(Forecast)
-                    .where(Forecast.business_id == biz_uuid)
-                    .order_by(desc(Forecast.generated_at))
-                    .limit(1)
-                )
-                fc = (await session.execute(fc_stmt)).scalars().first()
-                if fc and fc.crash_risk_pct is not None:
-                    context["crash_risk_pct"] = round(float(fc.crash_risk_pct), 1)
+                if context["has_live_telemetry"]:
+                    fc_stmt = (
+                        select(Forecast)
+                        .where(Forecast.business_id == biz_uuid)
+                        .order_by(desc(Forecast.generated_at))
+                        .limit(1)
+                    )
+                    fc = (await session.execute(fc_stmt)).scalars().first()
+                    if fc and fc.crash_risk_pct is not None:
+                        context["crash_risk_pct"] = round(float(fc.crash_risk_pct), 1)
 
         except Exception as e:
             logger.debug("Could not load full business context for business %s: %s", business_id, e)
@@ -311,14 +327,17 @@ class LLMAdapter:
 
         if tool_name == "get_live_telemetry":
             ctx = await self.get_live_business_context(business_id)
+            has_live = ctx.get("has_live_telemetry", False)
             return {
-                "latency_p99_ms": ctx["avg_response_time_ms"],
-                "error_rate_pct": ctx["error_rate_pct"],
-                "cpu_saturation_pct": ctx["cpu_usage_pct"],
-                "memory_saturation_pct": ctx["memory_usage_pct"],
-                "queue_depth": ctx["queue_depth"],
-                "throughput_orders_per_min": ctx["orders_per_min"],
-                "status": "nominal" if ctx["avg_response_time_ms"] < 250 and ctx["error_rate_pct"] < 1.0 else "degraded",
+                "has_live_telemetry": has_live,
+                "latency_p99_ms": ctx.get("avg_response_time_ms"),
+                "error_rate_pct": ctx.get("error_rate_pct"),
+                "cpu_saturation_pct": ctx.get("cpu_usage_pct"),
+                "memory_saturation_pct": ctx.get("memory_usage_pct"),
+                "queue_depth": ctx.get("queue_depth", 0),
+                "throughput_orders_per_min": ctx.get("orders_per_min"),
+                "status": "not_connected" if not has_live else ("nominal" if (ctx.get("avg_response_time_ms") or 0) < 250 and (ctx.get("error_rate_pct") or 0) < 1.0 else "degraded"),
+                "message": "Live telemetry is nominal." if has_live else "No live website or telemetry source is currently connected to this AI-CTO tenant. No metrics or vitals are available.",
             }
 
         elif tool_name == "query_anomalies":
@@ -347,7 +366,19 @@ class LLMAdapter:
             if horizon not in ["24h", "7d", "30d"]:
                 horizon = "24h"
             ctx = await self.get_live_business_context(business_id)
-            crash_risk = ctx.get("crash_risk_pct", 4.2)
+            has_live = ctx.get("has_live_telemetry", False)
+            if not has_live:
+                return {
+                    "horizon": horizon,
+                    "has_live_telemetry": False,
+                    "status": "not_connected",
+                    "crash_risk_pct": None,
+                    "resource_runway_days": None,
+                    "peak_multiplier_capacity": None,
+                    "recommendation": "No live telemetry is connected to generate capacity forecasts. Connect an external website or agent to enable ML capacity forecasting.",
+                }
+
+            crash_risk = ctx.get("crash_risk_pct") or 0.0
             runway_days = max(7, min(90, int(45 - crash_risk * 0.4)))
             multiplier = round(max(1.4, 4.0 - (crash_risk / 25.0)), 1)
             rec = "Sufficient headroom for baseline traffic. Monitor Redis session pool."
@@ -358,6 +389,7 @@ class LLMAdapter:
 
             return {
                 "horizon": horizon,
+                "has_live_telemetry": True,
                 "crash_risk_pct": crash_risk,
                 "resource_runway_days": runway_days,
                 "peak_multiplier_capacity": multiplier,
@@ -613,27 +645,37 @@ class LLMAdapter:
         business_id: str,
         messages: List[Dict[str, Any]],
     ) -> Dict[str, Any]:
-        """Grounded Telemetry Fallback: Synthesizes live cluster vitals directly from DB if all LLMs are down."""
+        """Grounded Fallback: Synthesizes direct response if all upstream LLMs are unavailable."""
         ctx = await self.get_live_business_context(business_id)
         biz_name = ctx.get("business_name", "AI-CTO Managed Tenant")
-        p99 = ctx.get("avg_response_time_ms", 184.0)
-        cpu = ctx.get("cpu_usage_pct", 42.0)
-        mem = ctx.get("memory_usage_pct", 58.5)
-        err = ctx.get("error_rate_pct", 0.08)
-        orders = ctx.get("orders_per_min", 5.3)
-        anomalies_count = len(ctx.get("active_anomalies", []))
-        risk = ctx.get("crash_risk_pct", 4.2)
+        has_telemetry = ctx.get("has_live_telemetry", False)
 
-        content = (
-            f"**FRIDAY Operations Status** ({biz_name})\n\n"
-            f"Cluster Telemetry Vitals:\n"
-            f"• P99 Latency: **{p99}ms**\n"
-            f"• CPU Utilization: **{cpu}%** | Memory: **{mem}%**\n"
-            f"• Transaction Rate: **{orders} orders/min** | Error Rate: **{err}%**\n"
-            f"• Active Anomalies: **{anomalies_count}** | Projected Crash Risk: **{risk}%**\n\n"
-            f"Operating Status: Direct telemetry stream active. All core platform services and metric ingestion pipelines are functioning normally. "
-            f"*(Note: Upstream neural inference providers are experiencing elevated latency; operating in grounded telemetry mode.)*"
-        )
+        if has_telemetry:
+            p99 = ctx.get("avg_response_time_ms")
+            cpu = ctx.get("cpu_usage_pct")
+            mem = ctx.get("memory_usage_pct")
+            err = ctx.get("error_rate_pct")
+            orders = ctx.get("orders_per_min")
+            anomalies_count = len(ctx.get("active_anomalies", []))
+            risk = ctx.get("crash_risk_pct") or 0.0
+
+            content = (
+                f"**FRIDAY Operations Status** ({biz_name})\n\n"
+                f"Cluster Telemetry Vitals:\n"
+                f"• P99 Latency: **{p99}ms**\n"
+                f"• CPU Utilization: **{cpu}%** | Memory: **{mem}%**\n"
+                f"• Transaction Rate: **{orders} orders/min** | Error Rate: **{err}%**\n"
+                f"• Active Anomalies: **{anomalies_count}** | Projected Crash Risk: **{risk}%**\n\n"
+                f"Operating Status: Direct telemetry stream active. All core platform services and metric ingestion pipelines are functioning normally."
+            )
+        else:
+            content = (
+                f"**FRIDAY Operations Status** ({biz_name})\n\n"
+                f"Operating Status: **Online & Ready**\n"
+                f"Telemetry Status: **No external website or telemetry stream is currently connected.**\n\n"
+                f"I am ready to assist you as your AI-CTO and engineering partner. You can connect a website or telemetry agent via the Integrations page, or ask me any software engineering, architecture, code, or deployment questions directly!"
+            )
+
         return {
             "content": content,
             "tool_calls": None,
@@ -685,10 +727,11 @@ class LLMAdapter:
 
         # 2. Build Grounded Telemetry & Business Context
         full_system_prompt = system_prompt or (
-            "You are FRIDAY, the principal AI-CTO and autonomous operations assistant for this enterprise digital platform. "
-            "You are powered exclusively by Moonshot AI's Kimi K3 neural engine via NVIDIA NIM. "
-            "Provide precise, highly technical, and actionable infrastructure diagnostics. "
-            "When diagnosing issues or recommending actions, ground your reasoning in the live telemetry and anomaly vitals provided."
+            "You are FRIDAY, an elite AI-CTO and trusted engineering partner powered by Moonshot AI (Kimi K3 via NVIDIA NIM). "
+            "You assist with software engineering, system architecture, cloud deployment, code quality, and infrastructure operations. "
+            "When telemetry is connected, ground operational diagnostics in the live vitals provided. "
+            "When no telemetry is connected, do NOT invent or assume fake metrics or anomalies; "
+            "instead, converse naturally like a knowledgeable general AI technical partner."
         )
 
         full_system_prompt += (
@@ -701,11 +744,24 @@ class LLMAdapter:
 
         if inject_telemetry:
             telemetry_ctx = await self.get_live_business_context(business_id)
-            full_system_prompt += (
-                f"\n\n<untrusted_telemetry_vitals business_id=\"{business_id}\">\n"
-                f"{json.dumps(telemetry_ctx, indent=2)}\n"
-                f"</untrusted_telemetry_vitals>"
-            )
+            has_telemetry = telemetry_ctx.get("has_live_telemetry", False)
+            if has_telemetry:
+                full_system_prompt += (
+                    f"\n\n<untrusted_telemetry_vitals business_id=\"{business_id}\" status=\"connected\">\n"
+                    f"{json.dumps(telemetry_ctx, indent=2)}\n"
+                    f"</untrusted_telemetry_vitals>\n"
+                    f"OPERATIONAL NOTE: Live microservice telemetry is connected. Ground any system health diagnostics in these exact vitals."
+                )
+            else:
+                full_system_prompt += (
+                    f"\n\n<untrusted_telemetry_vitals business_id=\"{business_id}\" status=\"not_connected\">\n"
+                    f"{json.dumps(telemetry_ctx, indent=2)}\n"
+                    f"</untrusted_telemetry_vitals>\n"
+                    f"CRITICAL INSTRUCTION: No live website or server telemetry is connected yet. "
+                    f"Do NOT hallucinate or claim any CPU percentage, response times, error rates, or anomalies exist. "
+                    f"If the user asks about system health or telemetry, inform them kindly that no website/service telemetry is connected yet. "
+                    f"Otherwise, converse naturally and helpfully as a general-purpose AI-CTO and software engineering partner."
+                )
 
         if context_hints:
             sanitized_hints = self.scrub_pii(context_hints)
@@ -856,8 +912,11 @@ class LLMAdapter:
             return
 
         full_system_prompt = system_prompt or (
-            "You are FRIDAY, the principal AI-CTO and autonomous operations assistant for this enterprise digital platform. "
-            "You are powered exclusively by Moonshot AI's Kimi K3 neural engine via NVIDIA NIM."
+            "You are FRIDAY, an elite AI-CTO and trusted engineering partner powered by Moonshot AI (Kimi K3 via NVIDIA NIM). "
+            "You assist with software engineering, system architecture, cloud deployment, code quality, and infrastructure operations. "
+            "When telemetry is connected, ground operational diagnostics in the live vitals provided. "
+            "When no telemetry is connected, do NOT invent or assume fake metrics or anomalies; "
+            "instead, converse naturally like a knowledgeable general AI technical partner."
         )
         full_system_prompt += (
             "\n\n--- SECURITY GUARDRAILS & DATA BOUNDARIES ---\n"
@@ -868,9 +927,26 @@ class LLMAdapter:
         )
         if inject_telemetry:
             biz_ctx = await self.get_live_business_context(business_id)
+            has_telemetry = biz_ctx.get("has_live_telemetry", False)
             safe_biz_name = self.escape_xml_delimiters(biz_ctx.get("business_name", "Tenant"))
             telemetry_str = self.escape_xml_delimiters(json.dumps(biz_ctx, indent=2))
-            full_system_prompt += f"\n\n<untrusted_telemetry_vitals business='{safe_biz_name}'>\n{telemetry_str}\n</untrusted_telemetry_vitals>\n"
+            if has_telemetry:
+                full_system_prompt += (
+                    f"\n\n<untrusted_telemetry_vitals business='{safe_biz_name}' status='connected'>\n"
+                    f"{telemetry_str}\n"
+                    f"</untrusted_telemetry_vitals>\n"
+                    f"OPERATIONAL NOTE: Live microservice telemetry is connected. Ground any system health diagnostics in these exact vitals.\n"
+                )
+            else:
+                full_system_prompt += (
+                    f"\n\n<untrusted_telemetry_vitals business='{safe_biz_name}' status='not_connected'>\n"
+                    f"{telemetry_str}\n"
+                    f"</untrusted_telemetry_vitals>\n"
+                    f"CRITICAL INSTRUCTION: No live website or server telemetry is connected yet. "
+                    f"Do NOT hallucinate or claim any CPU percentage, response times, error rates, or anomalies exist. "
+                    f"If the user asks about system health or telemetry, inform them kindly that no website/service telemetry is connected yet. "
+                    f"Otherwise, converse naturally and helpfully as a general-purpose AI-CTO and software engineering partner.\n"
+                )
 
         if context_hints:
             hints_str = self.escape_xml_delimiters(json.dumps(context_hints, indent=2))
