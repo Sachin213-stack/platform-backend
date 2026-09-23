@@ -149,3 +149,21 @@ async def get_current_business_id(
 ) -> uuid.UUID:
     """Dependency that returns the authenticated business_id."""
     return current_user.business_id
+
+
+async def get_optional_current_user_and_business(
+    request: Request,
+    credentials: Optional[HTTPAuthorizationCredentials] = Depends(security_bearer),
+    db: AsyncSession = Depends(get_db),
+) -> Optional[User]:
+    """
+    Optional authentication for features like neural voice synthesis.
+    If valid bearer credentials are provided, validates and sets context; otherwise returns None.
+    """
+    if not credentials:
+        return None
+    try:
+        return await get_current_user_and_business(request, credentials, db)
+    except HTTPException:
+        return None
+

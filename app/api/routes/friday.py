@@ -8,7 +8,10 @@ from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
-from app.api.dependencies.auth import get_current_user_and_business
+from app.api.dependencies.auth import (
+    get_current_user_and_business,
+    get_optional_current_user_and_business,
+)
 from app.db.session import get_db, is_db_available
 from app.db.models.business import User
 from app.db.models.alerts import Conversation
@@ -319,7 +322,7 @@ async def stream_chat_with_friday(
 @router.post("/voice/synthesize")
 async def synthesize_speech(
     request: FridayVoiceSynthesizeRequest,
-    current_user: User = Depends(get_current_user_and_business),
+    current_user: Optional[User] = Depends(get_optional_current_user_and_business),
 ):
     """
     Streams neural audio MP3 bytes synthesized via Edge-TTS.
